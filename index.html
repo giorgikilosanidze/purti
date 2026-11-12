@@ -210,7 +210,12 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 .rtable td,.rtable th{padding:10px 8px;text-align:center;border-bottom:1px solid rgba(226,188,106,.15)}
 .rtable th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
 .rtable td:first-child,.rtable th:first-child{text-align:left}
-.rtable tr.win td{color:var(--gold);font-weight:700}
+.rtable th .nm{display:inline-block;max-width:30vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;text-transform:none;letter-spacing:0;font-size:13px;color:var(--cream)}
+.rtable td.got{color:var(--cream);font-weight:700}
+.rtable .pt{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:10px;font-size:12px;font-weight:800;background:rgba(226,188,106,.18);color:var(--gold);border:1px solid rgba(226,188,106,.4)}
+.rtable tr.total td{font-weight:800;font-size:18px;border-bottom:0;border-top:1px solid rgba(226,188,106,.4)}
+.rtable tr.total td.win{color:var(--gold);font-size:22px}
+.rtable .red,.chip b.red{color:#ff8f8f}
 .btn-row{display:flex;gap:10px}
 
 @media (min-width:700px){
@@ -278,7 +283,7 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
     <div class="lang-switch" role="group" aria-label="Language"></div>
   </div>
   <div class="zone" id="oppZone">
-    <div class="tag"><div class="avatar" id="oppAv"></div><span class="pname" id="oppName"></span><span class="chip" id="oppCards"></span><span class="chip" id="oppSw"></span><span class="chip off hidden" id="oppOff"></span></div>
+    <div class="tag"><div class="avatar" id="oppAv"></div><span class="pname" id="oppName"></span><span class="chip" id="oppCards"></span><span class="chip" id="oppClubs"></span><span class="chip off hidden" id="oppOff"></span></div>
     <div class="opp-hand" id="oppHand"></div>
   </div>
   <div class="felt"><div class="felt-mark">11</div><div class="table-cards" id="table"></div></div>
@@ -289,11 +294,10 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
   </div>
   <div class="zone" id="myZone">
     <div class="hand" id="myHand"></div>
-    <div class="tag"><div class="avatar" id="myAv"></div><span class="pname" id="myName"></span><span class="chip" id="myCards"></span><span class="chip" id="mySw"></span><span class="chip off hidden" id="myOff"></span></div>
+    <div class="tag"><div class="avatar" id="myAv"></div><span class="pname" id="myName"></span><span class="chip" id="myCards"></span><span class="chip" id="myClubs"></span><span class="chip off hidden" id="myOff"></span></div>
   </div>
 </section>
 
-<div id="toast">ფურთი!</div>
 <div id="modalRoot"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -335,12 +339,13 @@ const T = {
     rejoin:"↩ Rejoin game {c}",
     yourTurn:"Your turn", theirTurn:"{n} is playing…", aiThinking:"Computer is thinking…",
     computer:"Computer",
-    willTake:"Takes {n} — tap again to play", willPlace:"Takes nothing — tap again to put it down",
-    cards:"<b>{n}</b> cards", sweeps:"<b>{n}</b> ★",
+    tapAgain:"Tap it again to play it",
+    cards:"<b>{n}</b> cards",
     round:"Round {n}", vs:"vs {n}",
     win:"You win!", lose:"{n} wins", draw:"It’s a draw!",
     resultSub:"Round {r} · Match {a}–{b}",
-    thPlayer:"Player", thCards:"Cards", thSw:"★ Sweeps",
+    ptMost:"Most cards", ptClubs:"Most clubs", ptTotal:"Points",
+    cardTie:"Cards were tied 26–26, so nobody got the 2 points.",
     playAgain:"Play again", menu:"Menu", close:"Got it", offline:"offline",
     waitingRematch:"Waiting for a new round…",
     rulesTitle:"How to play",
@@ -348,10 +353,10 @@ const T = {
       "Two players, a normal 52-card deck. Each player gets <b>4 cards</b> and <b>4 go face-up</b> on the table. When both hands are empty, everyone gets 4 more until the deck runs out.",
       "Play one card per turn. A number card (<b>Ace = 1</b>) takes table cards that add up to <b>11</b> together with it: A+10, 5+6, 2+2+7…",
       "<b>King takes a King</b>, <b>Queen takes a Queen</b>.",
-      "The <b>Jack is the ფურთი</b>: it sweeps every card on the table except Queens and Kings.",
+      "The <b>Jack is the ფურთი</b>: it takes every card on the table except Queens and Kings.",
       "If your card takes nothing, it stays on the table.",
-      "Clearing the whole table earns a <b>★</b>. At the end, leftover cards go to whoever took last. <b>Most cards wins</b>; ★ break ties.",
-      "Tip: tap a card to see what it would take, tap it again to play it."
+      "At the end, cards left on the table go to whoever took last. Then count <b>points</b> (5 in all): <b>most cards 2</b> (nobody if it’s 26–26), <b>2♣ 1</b>, <b>10♦ 1</b>, <b>most clubs 1</b>. <b>Most points wins.</b>",
+      "Tap a card to pick it, tap it again to play it."
     ]
   },
   ka:{
@@ -372,12 +377,13 @@ const T = {
     rejoin:"↩ დაბრუნდი თამაშში {c}",
     yourTurn:"შენი სვლაა", theirTurn:"სვლა: {n}…", aiThinking:"კომპიუტერი ფიქრობს…",
     computer:"კომპიუტერი",
-    willTake:"აიღებ {n} კარტს — შეეხე ისევ", willPlace:"ვერაფერს აიღებ — შეეხე ისევ, რომ დადო",
-    cards:"<b>{n}</b> კარტი", sweeps:"<b>{n}</b> ★",
+    tapAgain:"შეეხე ისევ, რომ ჩამოხვიდე",
+    cards:"<b>{n}</b> კარტი",
     round:"რაუნდი {n}", vs:"vs {n}",
     win:"მოიგე!", lose:"მოიგო: {n}", draw:"ფრეა!",
     resultSub:"რაუნდი {r} · ანგარიში {a}–{b}",
-    thPlayer:"მოთამაშე", thCards:"კარტი", thSw:"★ ფურთი",
+    ptMost:"მეტი კარტი", ptClubs:"მეტი ჯვარი", ptTotal:"ქულები",
+    cardTie:"კარტები თანაბრად გაიყო (26–26), ამიტომ 2 ქულა არავის ერგო.",
     playAgain:"კიდევ ერთხელ", menu:"მენიუ", close:"გასაგებია", offline:"გავიდა",
     waitingRematch:"ველოდებით ახალ რაუნდს…",
     rulesTitle:"როგორ ვითამაშოთ",
@@ -387,8 +393,8 @@ const T = {
       "<b>კაროლს მიჰყავს კაროლი</b>, <b>დამას — დამა</b>.",
       "<b>ვალეტი არის ფურთი</b>: მიჰყავს მაგიდაზე ყველაფერი, დამისა და კაროლის გარდა.",
       "თუ კარტმა ვერაფერი აიღო, მაგიდაზე რჩება.",
-      "მაგიდის სრულად გასუფთავება იძლევა <b>★</b>-ს. ბოლოს დარჩენილი კარტები მიაქვს მას, ვინც ბოლოს აიღო. <b>იგებს ვისაც მეტი კარტი აქვს</b>; თანაბრობისას — ★.",
-      "რჩევა: შეეხე კარტს, რომ ნახო რას აიღებს, და ისევ შეეხე, რომ ჩამოხვიდე."
+      "ბოლოს მაგიდაზე დარჩენილი კარტები მიაქვს მას, ვინც ბოლოს აიღო. შემდეგ ითვლება <b>ქულები</b> (სულ 5): <b>მეტი კარტი — 2</b> (26–26-ზე არავის), <b>ჯვრის ორიანი (2♣) — 1</b>, <b>აგურის ათიანი (10♦) — 1</b>, <b>მეტი ჯვარი — 1</b>. <b>იგებს ვისაც მეტი ქულა აქვს.</b>",
+      "შეეხე კარტს, რომ აირჩიო, და ისევ შეეხე, რომ ჩამოხვიდე."
     ]
   },
   fr:{
@@ -409,12 +415,13 @@ const T = {
     rejoin:"↩ Revenir à la partie {c}",
     yourTurn:"À toi de jouer", theirTurn:"{n} joue…", aiThinking:"L’ordinateur réfléchit…",
     computer:"Ordinateur",
-    willTake:"Prend {n} — appuie encore pour jouer", willPlace:"Ne prend rien — appuie encore pour la poser",
-    cards:"<b>{n}</b> cartes", sweeps:"<b>{n}</b> ★",
+    tapAgain:"Appuie encore pour la jouer",
+    cards:"<b>{n}</b> cartes",
     round:"Manche {n}", vs:"contre {n}",
     win:"Tu as gagné !", lose:"{n} gagne", draw:"Match nul !",
     resultSub:"Manche {r} · Score {a}–{b}",
-    thPlayer:"Joueur", thCards:"Cartes", thSw:"★ Balayages",
+    ptMost:"Plus de cartes", ptClubs:"Plus de trèfles", ptTotal:"Points",
+    cardTie:"Cartes à égalité (26–26) : personne ne marque les 2 points.",
     playAgain:"Rejouer", menu:"Menu", close:"Compris", offline:"hors ligne",
     waitingRematch:"En attente d’une nouvelle manche…",
     rulesTitle:"Comment jouer",
@@ -424,8 +431,8 @@ const T = {
       "<b>Le Roi (K) prend un Roi</b>, <b>la Dame (Q) prend une Dame</b>.",
       "<b>Le Valet (J) est le ფურთი</b> : il ramasse toutes les cartes de la table sauf les Dames et les Rois.",
       "Si ta carte ne prend rien, elle reste sur la table.",
-      "Vider toute la table rapporte une <b>★</b>. À la fin, les cartes restantes vont à celui qui a pris en dernier. <b>Celui qui a le plus de cartes gagne</b> ; les ★ départagent les égalités.",
-      "Astuce : appuie sur une carte pour voir ce qu’elle prendrait, puis appuie encore pour la jouer."
+      "À la fin, les cartes restantes sur la table vont à celui qui a pris en dernier. On compte alors les <b>points</b> (5 en tout) : <b>le plus de cartes 2</b> (personne en cas de 26–26), <b>le 2♣ 1</b>, <b>le 10♦ 1</b>, <b>le plus de trèfles 1</b>. <b>Le plus de points gagne.</b>",
+      "Appuie sur une carte pour la choisir, puis appuie encore pour la jouer."
     ]
   }
 };
@@ -489,6 +496,7 @@ function deal(s){
   for (let i = 0; i < 4; i++) for (const p of [s.turn, 1 - s.turn]) if (s.deck.length) s.h[p].push(s.deck.pop());
 }
 
+const STATE_V = 2;   // bump when the saved game format changes; older saved games are replaced
 function newRound(mode, players, prev){
   const deck = [];
   for (const su of "SHDC") for (const r of RANKS) deck.push(r + su);
@@ -496,11 +504,33 @@ function newRound(mode, players, prev){
   const table = [];
   while (table.length < 4){ const c = deck.pop(); if (rank(c) === "J") deck.unshift(c); else table.push(c); }
   const starter = prev ? 1 - prev.starter : 0;
-  const s = { v:1, id:rid(), seq:(prev ? prev.seq + 1 : 1), mode, p:players, deck, table, h:[[],[]],
-    cap:[0,0], sw:[0,0], last:-1, turn:starter, starter, over:false, res:null,
+  const s = { v:STATE_V, id:rid(), seq:(prev ? prev.seq + 1 : 1), mode, p:players, deck, table, h:[[],[]],
+    cap:[0,0], cl:[0,0], c2:-1, d10:-1, last:-1, turn:starter, starter, over:false, res:null,
     wins: prev ? prev.wins.slice() : [0,0], round: prev ? prev.round + 1 : 1, lm:null, mn:0 };
   deal(s);
   return s;
+}
+
+// player pi takes these cards: count them, count clubs, and note who has 2♣ and 10♦
+function collect(s, pi, cards){
+  for (const c of cards){
+    if (suit(c) === "C") s.cl[pi]++;
+    if (c === "2C") s.c2 = pi;
+    if (c === "10D") s.d10 = pi;
+  }
+  s.cap[pi] += cards.length;
+}
+
+// 5 points a round: most cards 2 (nobody on a 26–26 tie), 2♣ 1, 10♦ 1, most clubs 1
+function scoreRound(s){
+  const lead = (a, b) => a === b ? -1 : (a > b ? 0 : 1);
+  const most = lead(s.cap[0], s.cap[1]), clubs = lead(s.cl[0], s.cl[1]);
+  const pts = [0,0];
+  if (most >= 0) pts[most] += 2;
+  if (s.c2 >= 0) pts[s.c2] += 1;
+  if (s.d10 >= 0) pts[s.d10] += 1;
+  if (clubs >= 0) pts[clubs] += 1;
+  return { w: lead(pts[0], pts[1]), pts, most, clubs };
 }
 
 function applyMove(s0, pi, card){
@@ -510,32 +540,31 @@ function applyMove(s0, pi, card){
   s.h[pi].splice(hi, 1);
   const tb = s.table.slice();
   const took = captureFor(card, s.table);
-  let sweep = false;
   if (took.length){
     s.table = s.table.filter(c => !took.includes(c));
-    s.cap[pi] += took.length + 1;
+    collect(s, pi, took.concat([card]));
     s.last = pi;
-    if (!s.table.length){ sweep = true; s.sw[pi]++; }
   } else s.table.push(card);
   s.mn++;
-  s.lm = { n:s.mn, by:pi, c:card, tb, t:took, sw:sweep };
+  s.lm = { n:s.mn, by:pi, c:card, tb, t:took };
   s.turn = 1 - pi;
   if (!s.h[0].length && !s.h[1].length){
     if (s.deck.length) deal(s);
     else {
-      const to = s.last >= 0 ? s.last : pi;
-      s.cap[to] += s.table.length; s.table = [];
+      collect(s, s.last >= 0 ? s.last : pi, s.table);   // leftovers go to whoever took last
+      s.table = [];
       s.over = true;
-      let w = -1;
-      if (s.cap[0] !== s.cap[1]) w = s.cap[0] > s.cap[1] ? 0 : 1;
-      else if (s.sw[0] !== s.sw[1]) w = s.sw[0] > s.sw[1] ? 0 : 1;
-      s.res = { w };
-      if (w >= 0) s.wins[w]++;
+      s.res = scoreRound(s);
+      if (s.res.w >= 0) s.wins[s.res.w]++;
     }
   }
   s.seq++;
   return s;
 }
+
+// how much a card is worth to take: every card counts toward "most cards", clubs more, 2♣ and 10♦ most
+const cardWorth = c => 10 + (suit(c) === "C" ? 6 : 0) + (c === "2C" || c === "10D" ? 45 : 0);
+const worth = cards => cards.reduce((n, c) => n + cardWorth(c), 0);
 
 function aiChoose(s, pi){
   const hand = s.h[pi];
@@ -544,14 +573,15 @@ function aiChoose(s, pi){
     const took = captureFor(c, s.table);
     let score;
     if (took.length){
-      const left = s.table.length - took.length;
-      score = (took.length + 1) * 10 + (left === 0 ? 30 : 0);
-      if (rank(c) === "J" && took.length < 3 && hand.length > 1) score -= 22;
+      score = worth(took) + cardWorth(c);
+      // save the Jack for a bigger haul unless it's the last card or it grabs a point card
+      if (rank(c) === "J" && took.length < 3 && hand.length > 1 && !took.some(x => x === "2C" || x === "10D")) score -= 25;
     } else {
+      // put down the card that hands the opponent the least
       const nt = s.table.concat([c]);
       let risk = 0;
-      for (let v = 1; v <= 10; v++) risk = Math.max(risk, captureFor(String(v === 1 ? "A" : v) + "S", nt).length);
-      score = -risk * 4 - (rank(c) === "J" ? 30 : 0) - (val(rank(c)) === null ? 0 : 1);
+      for (const r of RANKS) risk = Math.max(risk, worth(captureFor(r + "S", nt)));
+      score = -risk * 0.5 - cardWorth(c) - (rank(c) === "J" ? 40 : 0);
     }
     score += Math.random() * 1.5;
     if (score > bestScore){ bestScore = score; best = c; }
@@ -561,8 +591,9 @@ function aiChoose(s, pi){
 
 function validState(g){
   try{
-    if (!g || typeof g !== "object" || g.v !== 1) return false;
+    if (!g || typeof g !== "object" || g.v !== STATE_V) return false;
     if (typeof g.id !== "string" || typeof g.seq !== "number") return false;
+    if (!Array.isArray(g.cap) || !Array.isArray(g.cl) || typeof g.c2 !== "number" || typeof g.d10 !== "number") return false;
     if (!Array.isArray(g.p) || g.p.length !== 2) return false;
     const all = [].concat(g.deck, g.table, g.h[0], g.h[1]);
     if (!all.every(c => typeof c === "string" && CARD_RE.test(c))) return false;
@@ -616,8 +647,9 @@ function renderState(s, anim){
   const myN = s.mode === "ai" ? myName() : (s.p[mi] && s.p[mi].name) || myName();
   $("oppName").textContent = oppName; $("oppAv").textContent = s.mode === "ai" ? "🤖" : initials(oppName);
   $("myName").textContent = myN; $("myAv").textContent = initials(myN);
-  $("oppCards").innerHTML = t("cards", {n:s.cap[oi]}); $("oppSw").innerHTML = t("sweeps", {n:s.sw[oi]});
-  $("myCards").innerHTML = t("cards", {n:s.cap[mi]}); $("mySw").innerHTML = t("sweeps", {n:s.sw[mi]});
+  const clubsChip = i => `♣ <b>${s.cl[i]}</b>` + (s.c2 === i ? ` · <b>2♣</b>` : "") + (s.d10 === i ? ` · <b class="red">10♦</b>` : "");
+  $("oppCards").innerHTML = t("cards", {n:s.cap[oi]}); $("oppClubs").innerHTML = clubsChip(oi);
+  $("myCards").innerHTML = t("cards", {n:s.cap[mi]}); $("myClubs").innerHTML = clubsChip(mi);
   const off = $("oppOff");
   off.classList.toggle("hidden", !(online && s.mode === "online" && online.oppOnline === false));
   off.textContent = t("offline");
@@ -641,9 +673,7 @@ function renderState(s, anim){
     tbl.innerHTML = cards.map(c => cardHTML(c, c === lm.c ? (lm.by === mi ? "in-me" : "in-opp") : "")).join("");
     if (lm.t.length) lm.t.concat([lm.c]).forEach(c => { const el = tbl.querySelector(`[data-id="${c}"]`); if (el) el.classList.add("taking"); });
   } else {
-    const preview = (sel && canPlay()) ? captureFor(sel, s.table) : [];
-    tbl.innerHTML = s.table.length ? s.table.map(c => cardHTML(c, preview.includes(c) ? "will" : "")).join("")
-      : `<div class="table-empty">—</div>`;
+    tbl.innerHTML = s.table.length ? s.table.map(c => cardHTML(c)).join("") : `<div class="table-empty">—</div>`;
   }
 
   // my hand
@@ -666,8 +696,7 @@ function renderState(s, anim){
   st.classList.toggle("mine", myTurn);
   if (anim || s.over) st.textContent = "";
   else if (myTurn){
-    if (sel){ const n = captureFor(sel, s.table).length; st.textContent = n ? t("willTake", {n:n+1}) : t("willPlace"); }
-    else st.textContent = t("yourTurn");
+    st.textContent = sel ? t("tapAgain") : t("yourTurn");
   } else st.textContent = s.mode === "ai" ? t("aiThinking") : t("theirTurn", {n:oppName});
 }
 
@@ -691,7 +720,6 @@ function runAnim(lm){
   const hasTake = lm.t.length > 0;
   setTimeout(() => {
     if (hasTake) lm.t.concat([lm.c]).forEach(c => { const el = tbl.querySelector(`[data-id="${c}"]`); if (el) el.classList.add(dir); });
-    if (lm.sw) showToast();
   }, hasTake ? 560 : 0);
   setTimeout(() => {
     busy = false;
@@ -714,10 +742,6 @@ function afterRender(){
       if (ns) setState(ns);
     }, 750 + Math.random() * 500);
   }
-}
-
-function showToast(){
-  const el = $("toast"); el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
 }
 
 /* hand interaction */
@@ -753,12 +777,23 @@ function showResult(){
   const myN = s.mode === "ai" ? myName() : s.p[mi].name;
   const w = s.res.w;
   const title = w < 0 ? t("draw") : (w === mi ? t("win") : t("lose", {n:esc(oppName)}));
-  const row = (n, i) => `<tr class="${w === i ? "win" : ""}"><td>${esc(n)}</td><td>${s.cap[i]}</td><td>${s.sw[i]}</td></tr>`;
+  const r = s.res;
+  // one cell: what the player has, plus the points it earned
+  const cell = (shown, pts) => `<td class="${pts ? "got" : ""}">${shown}${pts ? ` <span class="pt">+${pts}</span>` : ""}</td>`;
+  const owns = (who, i, p) => cell(who === i ? "✓" : "—", who === i ? p : 0);
+  const line = (label, f) => `<tr><td>${label}</td>${f(mi)}${f(oi)}</tr>`;
+  const rows =
+    line(esc(t("ptMost")), i => cell(s.cap[i], r.most === i ? 2 : 0)) +
+    line("2♣", i => owns(s.c2, i, 1)) +
+    line(`<span class="red">10♦</span>`, i => owns(s.d10, i, 1)) +
+    line(esc(t("ptClubs")), i => cell(s.cl[i], r.clubs === i ? 1 : 0)) +
+    `<tr class="total"><td>${esc(t("ptTotal"))}</td><td class="${w === mi ? "win" : ""}">${r.pts[mi]}</td><td class="${w === oi ? "win" : ""}">${r.pts[oi]}</td></tr>`;
   modal(`<div style="text-align:center;font-size:40px">${w === mi ? "🏆" : (w < 0 ? "🤝" : "🃏")}</div>
     <div class="result-title">${title}</div>
     <div class="result-sub">${esc(t("resultSub", {r:s.round, a:s.wins[mi], b:s.wins[oi]}))}</div>
     ${totalsLine(s, myN, oppName)}
-    <table class="rtable"><tr><th>${esc(t("thPlayer"))}</th><th>${esc(t("thCards"))}</th><th>${esc(t("thSw"))}</th></tr>${row(myN, mi)}${row(oppName, oi)}</table>
+    <table class="rtable"><tr><th></th><th><span class="nm">${esc(myN)}</span></th><th><span class="nm">${esc(oppName)}</span></th></tr>${rows}</table>
+    ${r.most < 0 ? `<p class="note" style="margin:0 0 6px">${esc(t("cardTie"))}</p>` : ""}
     <div class="btn-row"><button class="btn ghost" data-x="menu">${esc(t("menu"))}</button><button class="btn primary" data-x="again">${esc(t("playAgain"))}</button></div>`,
     root => {
       root.querySelector("[data-x=menu]").onclick = () => { closeModal(); leaveGame(); };
@@ -934,8 +969,8 @@ function enterGame(o, g){
 function onRemoteState(o, raw){
   if (online !== o) return;
   o.stateLoaded = true;
-  if (!raw){ maybeStart(o); return; }
-  let g = null; try{ g = JSON.parse(raw); }catch(e){ return; }
+  let g = null; try{ g = raw ? JSON.parse(raw) : null; }catch(e){}
+  if (!g || g.v !== STATE_V){ if (!state) maybeStart(o); return; }   // empty room, or a game saved by an older version
   if (!validState(g) || g.mode !== "online") return;
   const idx = g.p.findIndex(x => x && x.cid === fb.uid);
   if (idx < 0) return;
@@ -952,7 +987,7 @@ function commit(ns){
   setState(ns);
   recordResult(o, ns);
   o.room.child("state").transaction(cur => {
-    if (cur){ try{ const c = JSON.parse(cur); if (c.seq >= ns.seq) return; }catch(e){} }
+    if (cur){ try{ const c = JSON.parse(cur); if (c.v === ns.v && c.seq >= ns.seq) return; }catch(e){} }
     return raw;
   }, err => { if (err) console.warn("purti: save failed", err.message); }, false);
 }

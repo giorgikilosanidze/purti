@@ -14,7 +14,8 @@ A web version of ფურთი, the Georgian card game of elevens, built for f
 - Running totals: `results/<pair>/<gameId> = {w, t}`, where `<pair>` is the two lowercase names, sorted. Both clients write the same entry; the rules only accept the first, so each game counts once. Totals are counted client-side.
 - Players are anonymous Firebase users; the uid is kept per browser, so rejoining works on the same browser/device, not from a different one. `?guest` in the URL gives a tab its own uid for testing.
 - Languages: English, Georgian, French (`T.en` / `T.ka` / `T.fr`; `LANGS` sets the switcher: three buttons EN · ქარ · FR, tap one to pick it). Name, language and the last room are kept in localStorage. A name is required for online play.
-- Rules: 4 cards each, 4 on the table; number cards (Ace = 1) take table number cards that add to 11 with them; K takes K, Q takes Q; the Jack takes everything except Q and K; clearing the table gives a ★; leftovers go to the last capturer; most cards wins, ★ breaks ties.
+- Rules: 4 cards each, 4 on the table; number cards (Ace = 1) take table number cards that add to 11 with them; K takes K, Q takes Q; the Jack takes everything except Q and K; leftovers go to the last capturer. Scoring (`scoreRound`): most cards 2 (nobody on 26–26), 2♣ 1, 10♦ 1, most clubs 1; most points wins. No ★ sweeps (the user removed them). No capture hints: tapping a card only selects it (the user wants players to find the 11s themselves).
+- Game state is versioned (`STATE_V`, now 2). Bump it when the state shape changes; an older saved game in a room is replaced by a fresh deal.
 
 ## Status
 - Code is on https://github.com/giorgikilosanidze/purti (`main`).

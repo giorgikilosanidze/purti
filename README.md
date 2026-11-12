@@ -33,4 +33,6 @@ To try online play alone, open the site in two tabs and add `?guest` to one of t
 - A number card (Ace = 1) takes table number cards that add up to 11 with it.
 - King takes a King, Queen takes a Queen.
 - The Jack (the ფურთი) takes everything except Queens and Kings.
-- Clearing the table earns a ★. Leftovers go to whoever took last. Most cards wins; ★ breaks ties.
+- At the end, cards left on the table go to whoever took last.
+- Points, 5 per round: most cards 2 (nobody gets them on a 26–26 tie), the 2♣ 1, the 10♦ 1, most clubs 1. Most points wins the round; a draw is impossible.
+- No hints: tapping a card only picks it; you work out the 11s yourself. Tap it again to play it.
