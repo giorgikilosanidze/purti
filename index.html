@@ -90,6 +90,8 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 .size-pick button{width:52px;height:38px;border-radius:11px;font-weight:800;font-size:17px;color:var(--muted)}
 .size-pick button.on{background:linear-gradient(180deg,#f2d58f,var(--gold) 45%,var(--gold2));color:#2a1406}
 .join-row{display:flex;gap:10px}
+.rejoin-row{display:flex;gap:8px}
+.rejoin-row .forget{width:54px;flex:none;padding:0;font-size:22px;font-weight:400;color:var(--muted)}
 .join-row .input{text-transform:uppercase;letter-spacing:6px;font-weight:700;text-align:center}
 .join-row .btn{width:auto;padding:0 22px}
 .code{font-family:var(--serif);font-size:clamp(46px,14vw,64px);font-weight:800;letter-spacing:12px;text-align:center;color:var(--cream);
@@ -264,7 +266,10 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
     <div class="stack">
       <button class="btn primary" data-act="friend"><span>👥</span><span data-i="playFriend"></span></button>
       <button class="btn ghost" data-act="ai"><span>🤖</span><span data-i="playAI"></span></button>
-      <button class="btn ghost hidden" id="rejoinBtn" data-act="rejoin"></button>
+      <div class="rejoin-row hidden" id="rejoinRow">
+        <button class="btn ghost" id="rejoinBtn" data-act="rejoin"></button>
+        <button class="btn ghost forget" id="forgetBtn" data-act="forget">×</button>
+      </div>
     </div>
     <div class="home-foot"><button class="link" data-act="rules" data-i="howTo"></button></div>
   </div>
@@ -359,7 +364,7 @@ const T = {
     needName:"Type your name first. Your friend sees it, and your all-time score is kept under it.",
     reconnecting:"reconnecting…", allTime:"All-time", drawW:"draw", drawsW:"draws",
     connErr:"Couldn’t connect. Try again in a moment.",
-    rejoin:"↩ Rejoin game {c}",
+    rejoin:"↩ Rejoin game {c}", forget:"Forget this game",
     yourTurn:"Your turn", theirTurn:"{n} is playing…", aiThinking:"Computer is thinking…",
     computer:"Computer",
     tapAgain:"Tap it again to play it",
@@ -401,7 +406,7 @@ const T = {
     needName:"ჯერ სახელი ჩაწერე. მეგობარი მას დაინახავს და საერთო ანგარიშიც ამ სახელით ინახება.",
     reconnecting:"კავშირი აღდგება…", allTime:"სულ", drawW:"ფრე", drawsW:"ფრე",
     connErr:"დაკავშირება ვერ მოხერხდა. ცოტა ხანში სცადე.",
-    rejoin:"↩ დაბრუნდი თამაშში {c}",
+    rejoin:"↩ დაბრუნდი თამაშში {c}", forget:"ამ თამაშის დავიწყება",
     yourTurn:"შენი სვლაა", theirTurn:"სვლა: {n}…", aiThinking:"კომპიუტერი ფიქრობს…",
     computer:"კომპიუტერი",
     tapAgain:"შეეხე ისევ, რომ ჩამოხვიდე",
@@ -443,7 +448,7 @@ const T = {
     needName:"Saisis d’abord ton nom. Ton ami le voit, et ton score total est enregistré sous ce nom.",
     reconnecting:"reconnexion…", allTime:"Au total", drawW:"nul", drawsW:"nuls",
     connErr:"Connexion impossible. Réessaie dans un instant.",
-    rejoin:"↩ Revenir à la partie {c}",
+    rejoin:"↩ Revenir à la partie {c}", forget:"Oublier cette partie",
     yourTurn:"À toi de jouer", theirTurn:"{n} joue…", aiThinking:"L’ordinateur réfléchit…",
     computer:"Ordinateur",
     tapAgain:"Appuie encore pour la jouer",
@@ -852,7 +857,8 @@ function showResult(){
     ${ties.map(x => `<p class="note" style="margin:0 0 6px">${esc(x)}</p>`).join("")}
     <div class="btn-row"><button class="btn ghost" data-x="menu">${esc(t("menu"))}</button><button class="btn primary" data-x="again">${esc(t("playAgain"))}</button></div>`,
     root => {
-      root.querySelector("[data-x=menu]").onclick = () => { closeModal(); leaveGame(); };
+      // the round is over, so there's nothing to rejoin: forget the room
+      root.querySelector("[data-x=menu]").onclick = () => { closeModal(); leaveGame(true); };
       root.querySelector("[data-x=again]").onclick = () => { closeModal(); commit(newRound(state.mode, state.p, state)); };
     });
 }
@@ -1125,9 +1131,10 @@ function leaveOnline(clearSession){
   if (clearSession) store.del("session");
 }
 
-function leaveGame(){
+// forget = true after a finished round; leaving mid-round with ← keeps "Rejoin" in case it was an accident
+function leaveGame(forget){
   clearTimeout(aiTimer); aiTimer = null;
-  leaveOnline(false);
+  leaveOnline(!!forget);
   state = null; busy = false; sel = null;
   closeModal();
   show("home"); updateRejoin();
@@ -1135,9 +1142,10 @@ function leaveGame(){
 
 function updateRejoin(){
   const s = store.get("session");
-  const b = $("rejoinBtn");
-  if (s && s.code){ b.classList.remove("hidden"); b.textContent = t("rejoin", {c:s.code}); }
-  else b.classList.add("hidden");
+  $("rejoinRow").classList.toggle("hidden", !(s && s.code));
+  if (s && s.code) $("rejoinBtn").textContent = t("rejoin", {c:s.code});
+  $("forgetBtn").setAttribute("aria-label", t("forget"));
+  $("forgetBtn").title = t("forget");
 }
 
 function saveName(){ me.name = $("nameInput").value.trim().slice(0,16); store.set("name", me.name); }
@@ -1151,6 +1159,7 @@ document.addEventListener("click", e => {
   else if (a === "ai") startAI();
   else if (a === "friend") openLobby();
   else if (a === "home"){ leaveOnline(true); show("home"); updateRejoin(); }
+  else if (a === "forget"){ store.del("session"); updateRejoin(); }
   else if (a === "size"){ roomSize = +b.dataset.size === 4 ? 4 : 2; store.set("size", roomSize); refreshLobbyText(); }
   else if (a === "create") goOnline(genCode(), true, true, roomSize);
   else if (a === "rejoin"){ saveName(); const s = store.get("session"); if (s) goOnline(s.code, s.host); }
