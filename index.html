@@ -301,7 +301,15 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 /* ================= Firebase settings =================
    Paste the config object from Firebase console → Project settings → Your apps → Web app.
    These values are not secret; access is controlled by database.rules.json. */
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDoGX5zvB6P36yyhQoaAT8vDCDq6TU5480",
+  authDomain: "purti-73379.firebaseapp.com",
+  databaseURL: "https://purti-73379-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "purti-73379",
+  storageBucket: "purti-73379.firebasestorage.app",
+  messagingSenderId: "926925931853",
+  appId: "1:926925931853:web:eb318bc9b4c17daff8e304"
+};
 
 /* ================= i18n ================= */
 const T = {
@@ -808,11 +816,15 @@ async function goOnline(code, host, fresh){
         if (online !== o) return;
       }
     } else {
-      const [cr, ps] = await Promise.all([room.child("created").once("value"), room.child("players").once("value")]);
+      // a room has two seats: the creator and one guest
+      const [cr, gs] = await Promise.all([room.child("created").once("value"), room.child("guest").once("value")]);
       if (online !== o) return;
       if (!cr.exists()) return fail("noHost");
-      const players = ps.val() || {};
-      if (!players[f.uid] && Object.keys(players).length >= 2) return fail("full");
+      if (cr.val() !== f.uid && gs.val() !== f.uid){
+        if (gs.exists()) return fail("full");
+        try{ await room.child("guest").set(f.uid); }catch(e){ return fail("full"); }
+        if (online !== o) return;
+      }
     }
     await room.child("players/" + f.uid).set(myName().slice(0,16));
   }catch(e){ return fail("connErr"); }
