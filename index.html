@@ -388,10 +388,12 @@ const T = {
     ]
   }
 };
+const GUEST = /[?&]guest\b/.test(location.search);
+const SP = GUEST ? "purti.guest." : "purti.";
 const store = {
-  get(k){ try{ return JSON.parse(localStorage.getItem("purti."+k)); }catch(e){ return null; } },
-  set(k,v){ try{ localStorage.setItem("purti."+k, JSON.stringify(v)); }catch(e){} },
-  del(k){ try{ localStorage.removeItem("purti."+k); }catch(e){} }
+  get(k){ try{ return JSON.parse(localStorage.getItem(SP+k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(SP+k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(SP+k); }catch(e){} }
 };
 let lang = store.get("lang") || "en";
 const t = (k, vars) => { let s = (T[lang] && T[lang][k]) ?? T.en[k] ?? k; if (vars && typeof s === "string") for (const v in vars) s = s.split("{"+v+"}").join(vars[v]); return s; };
@@ -742,17 +744,15 @@ function fbInit(){
     if (!FIREBASE_CONFIG) return reject(new Error("notSetup"));
     if (typeof firebase === "undefined") return reject(new Error("noRoom"));
     try{
-      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      const auth = firebase.auth(), db = firebase.database();
-      // ?guest gives this tab its own player (handy for testing two players in one browser)
-      const persist = /[?&]guest\b/.test(location.search) ? firebase.auth.Auth.Persistence.SESSION : firebase.auth.Auth.Persistence.LOCAL;
-      auth.setPersistence(persist).then(() => {
-        let first = true;
-        const un = auth.onAuthStateChanged(u => {
-          if (u){ un(); fb = { auth, db, uid:u.uid }; resolve(fb); }
-          else if (first){ first = false; auth.signInAnonymously().catch(e => { un(); reject(e); }); }
-        });
-      }).catch(reject);
+      // ?guest uses a separately named Firebase app, so it signs in as a different player (for testing in one browser)
+      const appName = GUEST ? "guest" : "[DEFAULT]";
+      const app = firebase.apps.find(a => a.name === appName) || (GUEST ? firebase.initializeApp(FIREBASE_CONFIG, "guest") : firebase.initializeApp(FIREBASE_CONFIG));
+      const auth = app.auth(), db = app.database();
+      let first = true;
+      const un = auth.onAuthStateChanged(u => {
+        if (u){ un(); fb = { auth, db, uid:u.uid }; resolve(fb); }
+        else if (first){ first = false; auth.signInAnonymously().catch(e => { un(); reject(e); }); }
+      });
     }catch(e){ reject(e); }
   });
   fbReady.catch(() => { fbReady = null; });
