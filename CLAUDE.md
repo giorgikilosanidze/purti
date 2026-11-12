@@ -19,4 +19,6 @@ A web version of ფურთი, the Georgian card game of elevens, built for f
 ## Status
 - Code is on https://github.com/giorgikilosanidze/purti (`main`).
 - Firebase project `purti-73379` (Realtime Database in europe-west1, anonymous auth on, rules published). Its config is in `index.html`.
-- To do: turn on GitHub Pages, then test online play in two tabs (one with `?guest`).
+- Live at https://giorgikilosanidze.github.io/purti (GitHub Pages from `main` / root). Pages caches for ~10 min; add `?v=N` to bypass when testing a fresh deploy.
+- Tested 2026-11-12 in two tabs on the live site: create/join, moves (~90 ms tab to tab), refresh + Rejoin mid-game, offline badge, simultaneous "Play again", draw and win recorded once each in totals. Not yet tested on two real devices/networks.
+- Test data from that run is in the database (`rooms/*`, `results/testguest~testhost`); the rules don't allow deleting it from the app, so remove it in the Firebase console if wanted.

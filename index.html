@@ -326,7 +326,7 @@ const T = {
     noRoom:"Online play couldn’t load. Check your internet connection and reload the page.",
     notSetup:"Online play isn’t set up yet: the Firebase settings are missing.",
     needName:"Type your name first. Your friend sees it, and your all-time score is kept under it.",
-    reconnecting:"reconnecting…", allTime:"All-time", drawsW:"draws",
+    reconnecting:"reconnecting…", allTime:"All-time", drawW:"draw", drawsW:"draws",
     connErr:"Couldn’t connect. Try again in a moment.",
     rejoin:"↩ Rejoin game {c}",
     yourTurn:"Your turn", theirTurn:"{n} is playing…", aiThinking:"Computer is thinking…",
@@ -363,7 +363,7 @@ const T = {
     noRoom:"ონლაინ თამაში ვერ ჩაიტვირთა. შეამოწმე ინტერნეტი და განაახლე გვერდი.",
     notSetup:"ონლაინ თამაში ჯერ არ არის მომართული: Firebase-ის პარამეტრები აკლია.",
     needName:"ჯერ სახელი ჩაწერე. მეგობარი მას დაინახავს და საერთო ანგარიშიც ამ სახელით ინახება.",
-    reconnecting:"კავშირი აღდგება…", allTime:"სულ", drawsW:"ფრე",
+    reconnecting:"კავშირი აღდგება…", allTime:"სულ", drawW:"ფრე", drawsW:"ფრე",
     connErr:"დაკავშირება ვერ მოხერხდა. ცოტა ხანში სცადე.",
     rejoin:"↩ დაბრუნდი თამაშში {c}",
     yourTurn:"შენი სვლაა", theirTurn:"სვლა: {n}…", aiThinking:"კომპიუტერი ფიქრობს…",
@@ -936,15 +936,15 @@ function recordResult(o, g){
   if (!g.over || !g.res || o.recorded.has(g.id) || !fb) return;
   o.recorded.add(g.id);
   const w = g.res.w >= 0 ? nameKey(g.p[g.res.w].name) : "";
-  // both players may write the same entry; the rules only accept the first
+  // both players may try to save the same game; only the first one is kept
   fb.db.ref("results/" + pairKey(g.p[0].name, g.p[1].name) + "/" + g.id)
-    .set({ w, t: firebase.database.ServerValue.TIMESTAMP }).catch(() => {});
+    .transaction(cur => cur ? undefined : { w, t: Date.now() }, () => {}, false);
 }
 
 function totalsLine(s, myN, oppName){
   const tot = s.mode === "online" && online && online.totals;
   if (!tot || !tot.games) return "";
-  return `<div class="result-sub" style="margin-top:-10px">${esc(t("allTime"))}: ${esc(myN)} ${tot.mine} – ${tot.theirs} ${esc(oppName)}${tot.draws ? ` · ${tot.draws} ${esc(t("drawsW"))}` : ""}</div>`;
+  return `<div class="result-sub" style="margin-top:-10px">${esc(t("allTime"))}: ${esc(myN)} ${tot.mine} – ${tot.theirs} ${esc(oppName)}${tot.draws ? ` · ${tot.draws} ${esc(t(tot.draws === 1 ? "drawW" : "drawsW"))}` : ""}</div>`;
 }
 
 function leaveOnline(clearSession){
