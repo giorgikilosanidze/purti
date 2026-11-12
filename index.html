@@ -50,7 +50,9 @@ input{font:inherit}
 .icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.06);border:1px solid rgba(226,188,106,.25);font-size:17px;font-weight:700;flex:none}
 .icon-btn:hover{background:rgba(226,188,106,.14)}
-.lang-btn{font-size:13px;width:auto;padding:0 12px;border-radius:20px}
+.lang-btn{font-size:13px;width:auto;padding:0 12px;border-radius:20px;color:var(--muted);font-weight:600;white-space:nowrap}
+.lang-btn b{color:var(--gold);font-weight:800}
+.lang-btn i{font-style:normal;opacity:.45;margin:0 5px}
 .link{color:var(--gold);text-decoration:underline;text-underline-offset:3px;font-weight:600}
 
 /* ---------- home ---------- */
@@ -224,7 +226,7 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 
 <!-- HOME -->
 <section id="home" class="screen">
-  <div class="home-top"><button class="icon-btn lang-btn" data-act="lang">ქართ / EN</button></div>
+  <div class="home-top"><button class="icon-btn lang-btn" data-act="lang" aria-label="Language"></button></div>
   <div class="home-inner">
     <div class="fan" id="fan"></div>
     <h1 class="logo">ფურთი</h1>
@@ -271,7 +273,7 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
     <button class="icon-btn" data-act="leave" aria-label="Menu">←</button>
     <div class="mid"><div class="t">ფურთი</div><div class="sub" id="subline"></div></div>
     <button class="icon-btn" data-act="rules" aria-label="Rules">?</button>
-    <button class="icon-btn lang-btn" data-act="lang">ქა/EN</button>
+    <button class="icon-btn lang-btn" data-act="lang" aria-label="Language"></button>
   </div>
   <div class="zone" id="oppZone">
     <div class="tag"><div class="avatar" id="oppAv"></div><span class="pname" id="oppName"></span><span class="chip" id="oppCards"></span><span class="chip" id="oppSw"></span><span class="chip off hidden" id="oppOff"></span></div>
@@ -386,8 +388,46 @@ const T = {
       "მაგიდის სრულად გასუფთავება იძლევა <b>★</b>-ს. ბოლოს დარჩენილი კარტები მიაქვს მას, ვინც ბოლოს აიღო. <b>იგებს ვისაც მეტი კარტი აქვს</b>; თანაბრობისას — ★.",
       "რჩევა: შეეხე კარტს, რომ ნახო რას აიღებს, და ისევ შეეხე, რომ ჩამოხვიდე."
     ]
+  },
+  fr:{
+    tagline:"Le jeu de cartes géorgien des onze",
+    yourName:"Ton nom", defName:"Joueur",
+    playFriend:"Jouer avec un ami", playAI:"S’entraîner contre l’ordinateur", howTo:"Comment jouer",
+    create:"Créer une partie", orJoin:"ou rejoindre avec un code", join:"Rejoindre",
+    shareCode:"Envoie ce code à ton ami. Il ouvre cette page, appuie sur « Jouer avec un ami » et le saisit.",
+    copy:"Copier le code", copied:"Copié !",
+    waiting:"En attente de ton ami…", connecting:"Recherche de la partie…",
+    noHost:"Aucune partie avec ce code. Vérifie le code et réessaie.",
+    full:"Cette partie a déjà deux joueurs.",
+    noRoom:"Le jeu en ligne n’a pas pu se charger. Vérifie ta connexion internet et recharge la page.",
+    notSetup:"Le jeu en ligne n’est pas encore configuré : les paramètres Firebase manquent.",
+    needName:"Saisis d’abord ton nom. Ton ami le voit, et ton score total est enregistré sous ce nom.",
+    reconnecting:"reconnexion…", allTime:"Au total", drawW:"nul", drawsW:"nuls",
+    connErr:"Connexion impossible. Réessaie dans un instant.",
+    rejoin:"↩ Revenir à la partie {c}",
+    yourTurn:"À toi de jouer", theirTurn:"{n} joue…", aiThinking:"L’ordinateur réfléchit…",
+    computer:"Ordinateur",
+    willTake:"Prend {n} — appuie encore pour jouer", willPlace:"Ne prend rien — appuie encore pour la poser",
+    cards:"<b>{n}</b> cartes", sweeps:"<b>{n}</b> ★",
+    round:"Manche {n}", vs:"contre {n}",
+    win:"Tu as gagné !", lose:"{n} gagne", draw:"Match nul !",
+    resultSub:"Manche {r} · Score {a}–{b}",
+    thPlayer:"Joueur", thCards:"Cartes", thSw:"★ Balayages",
+    playAgain:"Rejouer", menu:"Menu", close:"Compris", offline:"hors ligne",
+    waitingRematch:"En attente d’une nouvelle manche…",
+    rulesTitle:"Comment jouer",
+    rules:[
+      "Deux joueurs, un jeu normal de 52 cartes. Chaque joueur reçoit <b>4 cartes</b> et <b>4 cartes sont posées face visible</b> sur la table. Quand les deux mains sont vides, chacun en reçoit 4 de plus, jusqu’à la fin du paquet.",
+      "Joue une carte par tour. Une carte numérotée (<b>As = 1</b>) prend les cartes de la table qui font <b>11</b> avec elle : A+10, 5+6, 2+2+7…",
+      "<b>Le Roi (K) prend un Roi</b>, <b>la Dame (Q) prend une Dame</b>.",
+      "<b>Le Valet (J) est le ფურთი</b> : il ramasse toutes les cartes de la table sauf les Dames et les Rois.",
+      "Si ta carte ne prend rien, elle reste sur la table.",
+      "Vider toute la table rapporte une <b>★</b>. À la fin, les cartes restantes vont à celui qui a pris en dernier. <b>Celui qui a le plus de cartes gagne</b> ; les ★ départagent les égalités.",
+      "Astuce : appuie sur une carte pour voir ce qu’elle prendrait, puis appuie encore pour la jouer."
+    ]
   }
 };
+const LANGS = [["en","EN"], ["ka","ქარ"], ["fr","FR"]];
 const GUEST = /[?&]guest\b/.test(location.search);
 const SP = GUEST ? "purti.guest." : "purti.";
 const store = {
@@ -395,13 +435,16 @@ const store = {
   set(k,v){ try{ localStorage.setItem(SP+k, JSON.stringify(v)); }catch(e){} },
   del(k){ try{ localStorage.removeItem(SP+k); }catch(e){} }
 };
-let lang = store.get("lang") || "en";
+let lang = store.get("lang");
+if (!T[lang]) lang = "en";
 const t = (k, vars) => { let s = (T[lang] && T[lang][k]) ?? T.en[k] ?? k; if (vars && typeof s === "string") for (const v in vars) s = s.split("{"+v+"}").join(vars[v]); return s; };
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 function applyLang(){
   document.documentElement.lang = lang;
+  const langHTML = LANGS.map(([code, label]) => code === lang ? `<b>${label}</b>` : `<span>${label}</span>`).join("<i>·</i>");
+  document.querySelectorAll(".lang-btn").forEach(b => { b.innerHTML = langHTML; });
   document.querySelectorAll("[data-i]").forEach(el => { el.textContent = t(el.dataset.i); });
   const ni = $("nameInput"); ni.placeholder = t("defName");
   $("codeInput").placeholder = "ABCD";
@@ -975,7 +1018,7 @@ function saveName(){ me.name = $("nameInput").value.trim().slice(0,16); store.se
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const a = b.dataset.act;
-  if (a === "lang"){ lang = lang === "en" ? "ka" : "en"; store.set("lang", lang); applyLang(); }
+  if (a === "lang"){ const i = LANGS.findIndex(l => l[0] === lang); lang = LANGS[(i + 1) % LANGS.length][0]; store.set("lang", lang); applyLang(); }
   else if (a === "rules") showRules();
   else if (a === "ai") startAI();
   else if (a === "friend") openLobby();

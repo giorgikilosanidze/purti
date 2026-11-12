@@ -5,7 +5,7 @@ The Georgian card game of elevens, as a small web app. Play online with a friend
 - One file: `index.html` (no build step).
 - Online play goes through [Firebase Realtime Database](https://firebase.google.com/docs/database). The game lives on the server, so a refresh, a dropped connection or a closed tab doesn't lose it: open the page again and tap "Rejoin".
 - All-time results between the two of you are saved and shown during the game and after each round. They're kept under your two names, so use the same names every time.
-- Works on phones, tablets and desktop. English and Georgian.
+- Works on phones, tablets and desktop. English, Georgian and French.
 
 ## One-time Firebase setup
 
