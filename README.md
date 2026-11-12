@@ -3,12 +3,29 @@
 The Georgian card game of elevens, as a small web app. Play online with a friend using a 4-letter code, or practise against the computer.
 
 - One file: `index.html` (no build step).
-- Online play is peer-to-peer through [PeerJS](https://peerjs.com/): the two browsers connect directly, so there is no server to run.
+- Online play goes through [Firebase Realtime Database](https://firebase.google.com/docs/database). The game lives on the server, so a refresh, a dropped connection or a closed tab doesn't lose it: open the page again and tap "Rejoin".
+- All-time results between the two of you are saved and shown during the game and after each round. They're kept under your two names, so use the same names every time.
 - Works on phones, tablets and desktop. English and Georgian.
+
+## One-time Firebase setup
+
+1. Go to https://console.firebase.google.com, **Create a project** (Google Analytics isn't needed).
+2. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable.**
+3. In Authentication → **Settings → Authorized domains**, add `giorgikilosanidze.github.io`.
+4. **Build → Realtime Database → Create database**, pick a location, start in **locked mode**.
+5. In Realtime Database → **Rules**, replace everything with the contents of `database.rules.json` and click **Publish**.
+6. **Project settings (⚙) → Your apps → Web (`</>`)**, register an app (no Hosting needed), and copy the `firebaseConfig` object. Make sure it includes `databaseURL`.
+7. In `index.html`, replace `const FIREBASE_CONFIG = null;` with that object, e.g. `const FIREBASE_CONFIG = { apiKey: "...", authDomain: "...", databaseURL: "...", projectId: "...", appId: "..." };`
+
+The config values are not secret; the rules decide who can read and write. Only the two players in a room can see or change it.
+
+The free Spark plan is far more than two players need.
 
 ## Run it
 
-Open `index.html` in a browser, or host the folder on GitHub Pages: **Settings → Pages → Deploy from a branch → `main` / root**.
+Host the folder on GitHub Pages: **Settings → Pages → Deploy from a branch → `main` / root**. Practice mode also works by opening `index.html` directly.
+
+To try online play alone, open the site in two tabs and add `?guest` to one of the URLs; that tab plays as a separate player.
 
 ## Rules (as implemented)
 

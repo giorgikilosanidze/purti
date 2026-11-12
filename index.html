@@ -285,17 +285,24 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
   </div>
   <div class="zone" id="myZone">
     <div class="hand" id="myHand"></div>
-    <div class="tag"><div class="avatar" id="myAv"></div><span class="pname" id="myName"></span><span class="chip" id="myCards"></span><span class="chip" id="mySw"></span></div>
+    <div class="tag"><div class="avatar" id="myAv"></div><span class="pname" id="myName"></span><span class="chip" id="myCards"></span><span class="chip" id="mySw"></span><span class="chip off hidden" id="myOff"></span></div>
   </div>
 </section>
 
 <div id="toast">ფურთი!</div>
 <div id="modalRoot"></div>
 
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>
 (() => {
 "use strict";
+/* ================= Firebase settings =================
+   Paste the config object from Firebase console → Project settings → Your apps → Web app.
+   These values are not secret; access is controlled by database.rules.json. */
+const FIREBASE_CONFIG = null;
+
 /* ================= i18n ================= */
 const T = {
   en:{
@@ -306,9 +313,12 @@ const T = {
     shareCode:"Send this code to your friend. They open this page, tap “Play with a friend” and enter it.",
     copy:"Copy code", copied:"Copied!",
     waiting:"Waiting for your friend…", connecting:"Looking for the game…",
-    noHost:"No one is hosting this code yet. Check the code, and make sure your friend’s game is open.",
+    noHost:"There’s no game with this code. Check the code and try again.",
     full:"This game already has two players.",
     noRoom:"Online play couldn’t load. Check your internet connection and reload the page.",
+    notSetup:"Online play isn’t set up yet: the Firebase settings are missing.",
+    needName:"Type your name first. Your friend sees it, and your all-time score is kept under it.",
+    reconnecting:"reconnecting…", allTime:"All-time", drawsW:"draws",
     connErr:"Couldn’t connect. Try again in a moment.",
     rejoin:"↩ Rejoin game {c}",
     yourTurn:"Your turn", theirTurn:"{n} is playing…", aiThinking:"Computer is thinking…",
@@ -340,9 +350,12 @@ const T = {
     shareCode:"გაუგზავნე ეს კოდი მეგობარს. ის ხსნის ამ გვერდს, აჭერს „ითამაშე მეგობართან“ და წერს კოდს.",
     copy:"კოდის კოპირება", copied:"დაკოპირდა!",
     waiting:"ველოდებით მეგობარს…", connecting:"თამაშს ვეძებთ…",
-    noHost:"ამ კოდით თამაში ჯერ არ არის. შეამოწმე კოდი — მეგობარს თამაში გახსნილი უნდა ჰქონდეს.",
+    noHost:"ამ კოდით თამაში არ მოიძებნა. შეამოწმე კოდი და სცადე თავიდან.",
     full:"ამ თამაშში უკვე ორი მოთამაშეა.",
     noRoom:"ონლაინ თამაში ვერ ჩაიტვირთა. შეამოწმე ინტერნეტი და განაახლე გვერდი.",
+    notSetup:"ონლაინ თამაში ჯერ არ არის მომართული: Firebase-ის პარამეტრები აკლია.",
+    needName:"ჯერ სახელი ჩაწერე. მეგობარი მას დაინახავს და საერთო ანგარიშიც ამ სახელით ინახება.",
+    reconnecting:"კავშირი აღდგება…", allTime:"სულ", drawsW:"ფრე",
     connErr:"დაკავშირება ვერ მოხერხდა. ცოტა ხანში სცადე.",
     rejoin:"↩ დაბრუნდი თამაშში {c}",
     yourTurn:"შენი სვლაა", theirTurn:"სვლა: {n}…", aiThinking:"კომპიუტერი ფიქრობს…",
@@ -552,8 +565,13 @@ function renderState(s, anim){
   const off = $("oppOff");
   off.classList.toggle("hidden", !(online && s.mode === "online" && online.oppOnline === false));
   off.textContent = t("offline");
+  const moff = $("myOff");
+  moff.classList.toggle("hidden", !(online && s.mode === "online" && online.connected === false));
+  moff.textContent = t("reconnecting");
   $("deckCount").textContent = s.deck.length;
-  $("subline").textContent = t("round", {n:s.round}) + " · " + t("vs", {n:oppName});
+  const tot = s.mode === "online" && online && online.totals;
+  $("subline").textContent = t("round", {n:s.round}) + " · " + t("vs", {n:oppName})
+    + (tot && tot.games ? ` · ${t("allTime")} ${tot.mine}–${tot.theirs}` : "");
   $("matchScore").textContent = `${s.wins[mi]}–${s.wins[oi]}`;
 
   // opponent hand
@@ -602,7 +620,6 @@ function canPlay(){ return state && !state.over && state.turn === mi && !busy; }
 function setState(ns){
   const prev = state;
   state = ns;
-  if (online && ns.mode === "online") pushPresence();
   if (busy){ pendingRender = true; return; }
   const sameGame = prev && prev.id === ns.id;
   if (!sameGame){ sel = null; shownLm = ns.lm ? ns.lm.n : null; seenHand = new Set(); closeModal(); }
@@ -651,7 +668,7 @@ function showToast(){
 $("myHand").addEventListener("click", e => {
   const el = e.target.closest(".card"); if (!el || !canPlay()) return;
   const id = el.dataset.id;
-  if (sel === id){ sel = null; const ns = applyMove(state, mi, id); if (ns) setState(ns); }
+  if (sel === id){ sel = null; const ns = applyMove(state, mi, id); if (ns) commit(ns); }
   else { sel = id; renderFinal(); }
   e.stopPropagation();
 });
@@ -684,11 +701,12 @@ function showResult(){
   modal(`<div style="text-align:center;font-size:40px">${w === mi ? "🏆" : (w < 0 ? "🤝" : "🃏")}</div>
     <div class="result-title">${title}</div>
     <div class="result-sub">${esc(t("resultSub", {r:s.round, a:s.wins[mi], b:s.wins[oi]}))}</div>
+    ${totalsLine(s, myN, oppName)}
     <table class="rtable"><tr><th>${esc(t("thPlayer"))}</th><th>${esc(t("thCards"))}</th><th>${esc(t("thSw"))}</th></tr>${row(myN, mi)}${row(oppName, oi)}</table>
     <div class="btn-row"><button class="btn ghost" data-x="menu">${esc(t("menu"))}</button><button class="btn primary" data-x="again">${esc(t("playAgain"))}</button></div>`,
     root => {
       root.querySelector("[data-x=menu]").onclick = () => { closeModal(); leaveGame(); };
-      root.querySelector("[data-x=again]").onclick = () => { closeModal(); setState(newRound(state.mode, state.p, state)); };
+      root.querySelector("[data-x=again]").onclick = () => { closeModal(); commit(newRound(state.mode, state.p, state)); };
     });
 }
 
@@ -701,26 +719,65 @@ function startAI(){
   setState(newRound("ai", [{cid:me.cid, name:myName()}, {cid:"ai", name:"AI"}], null));
 }
 
-/* ================= online (peer-to-peer via PeerJS) ================= */
-const PEER_PREFIX = "purti-ge-2026-";
-
+/* ================= online (Firebase Realtime Database) =================
+   rooms/<CODE>/created  uid of the player who made the room (player 1)
+   rooms/<CODE>/players  { uid: name } — at most two
+   rooms/<CODE>/state    the whole game as a JSON string (the one true copy)
+   rooms/<CODE>/online   { uid: true } while that player has the page open
+   results/<pair>/<gameId> { w: winner's name (lowercase) or "", t: time } — one entry per finished game */
 function genCode(){ const a = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 4; i++) s += a[rnd(a.length)]; return s; }
+
+let fbReady = null, fb = null;
+function fbInit(){
+  if (fbReady) return fbReady;
+  fbReady = new Promise((resolve, reject) => {
+    if (!FIREBASE_CONFIG) return reject(new Error("notSetup"));
+    if (typeof firebase === "undefined") return reject(new Error("noRoom"));
+    try{
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      const auth = firebase.auth(), db = firebase.database();
+      // ?guest gives this tab its own player (handy for testing two players in one browser)
+      const persist = /[?&]guest\b/.test(location.search) ? firebase.auth.Auth.Persistence.SESSION : firebase.auth.Auth.Persistence.LOCAL;
+      auth.setPersistence(persist).then(() => {
+        let first = true;
+        const un = auth.onAuthStateChanged(u => {
+          if (u){ un(); fb = { auth, db, uid:u.uid }; resolve(fb); }
+          else if (first){ first = false; auth.signInAnonymously().catch(e => { un(); reject(e); }); }
+        });
+      }).catch(reject);
+    }catch(e){ reject(e); }
+  });
+  fbReady.catch(() => { fbReady = null; });
+  return fbReady;
+}
+
+const nameKey = n => String(n || "").trim().toLowerCase().slice(0,16);
+const pairKey = (a, b) => [nameKey(a), nameKey(b)].sort().map(x => encodeURIComponent(x).replace(/\./g, "%2E")).join("~");
 
 function lobbyNote(msg, err){ const n = $("lobbyNote"); n.textContent = msg || ""; n.classList.toggle("err", !!err); }
 function refreshLobbyText(){
   if (online){ $("waitText").textContent = online.host ? t("waiting") : t("connecting"); }
 }
+function lobbyChoose(){ $("lobbyChoose").classList.remove("hidden"); $("lobbyWait").classList.add("hidden"); }
+
+function notice(msg){
+  openModal = null;
+  modal(`<p style="text-align:center;line-height:1.5;margin:4px 0 6px">${esc(msg)}</p><button class="btn primary" data-x="close">${esc(t("close"))}</button>`,
+    root => { root.querySelector("[data-x=close]").onclick = () => { closeModal(); $("nameInput").focus(); }; });
+}
 
 function openLobby(){
   saveName();
+  if (!me.name){ notice(t("needName")); return; }
   show("lobby");
-  $("lobbyChoose").classList.remove("hidden"); $("lobbyWait").classList.add("hidden");
+  lobbyChoose();
   lobbyNote("");
-  if (typeof Peer !== "function") lobbyNote(t("noRoom"), true);
+  fbInit().catch(e => lobbyNote(t(e && e.message === "notSetup" ? "notSetup" : "noRoom"), true));
 }
 
-function goOnline(code, host, fresh){
-  if (typeof Peer !== "function"){ lobbyNote(t("noRoom"), true); return; }
+function watch(o, ref, ev, cb){ ref.on(ev, cb, () => {}); o.subs.push(() => ref.off(ev, cb)); }
+
+async function goOnline(code, host, fresh){
   if (online) leaveOnline(false);
   show("lobby");
   $("lobbyChoose").classList.add("hidden"); $("lobbyWait").classList.remove("hidden");
@@ -729,119 +786,148 @@ function goOnline(code, host, fresh){
   document.querySelector('#lobbyWait [data-i="shareCode"]').classList.toggle("hidden", !host);
   lobbyNote("");
   state = null;
-  online = { code, host, fresh:!!fresh, peer:null, conn:null, oppOnline:null, timers:[], dead:false };
+  const o = online = { code, host, subs:[], players:{}, stateLoaded:false, oppOnline:null, connected:null, totals:null, totalsKey:null, recorded:new Set(), room:null };
   refreshLobbyText();
+  const fail = (key) => { if (online !== o) return; leaveOnline(false); show("lobby"); lobbyChoose(); lobbyNote(t(key), true); };
+
+  let f;
+  try{ f = await fbInit(); }catch(e){ return fail(e && e.message === "notSetup" ? "notSetup" : "noRoom"); }
+  if (online !== o) return;
+  let room = f.db.ref("rooms/" + code);
+
+  try{
+    if (fresh){
+      // claim an unused code; the rules refuse a code that already exists
+      for (let tries = 0; ; tries++){
+        try{ await room.child("created").set(f.uid); break; }
+        catch(e){
+          if (tries >= 5) throw e;
+          code = genCode(); o.code = code; room = f.db.ref("rooms/" + code);
+          $("codeShow").textContent = code;
+        }
+        if (online !== o) return;
+      }
+    } else {
+      const [cr, ps] = await Promise.all([room.child("created").once("value"), room.child("players").once("value")]);
+      if (online !== o) return;
+      if (!cr.exists()) return fail("noHost");
+      const players = ps.val() || {};
+      if (!players[f.uid] && Object.keys(players).length >= 2) return fail("full");
+    }
+    await room.child("players/" + f.uid).set(myName().slice(0,16));
+  }catch(e){ return fail("connErr"); }
+  if (online !== o) return;
+  o.room = room;
   store.set("session", { code, host });
-  startPeer();
-}
 
-function later(fn, ms){ if (!online) return; const o = online; o.timers.push(setTimeout(() => { if (online === o && !o.dead) fn(); }, ms)); }
-
-function startPeer(){
-  const o = online;
-  const peer = o.host ? new Peer(PEER_PREFIX + o.code) : new Peer();
-  o.peer = peer;
-  peer.on("open", () => {
+  // my presence: true while connected, removed by the server when I drop
+  const meOn = room.child("online/" + f.uid);
+  o.subs.push(() => { try{ meOn.onDisconnect().cancel(); meOn.remove(); }catch(e){} });
+  watch(o, f.db.ref(".info/connected"), "value", snap => {
     if (online !== o) return;
-    if (!o.host) connectToHost();
+    o.connected = !!snap.val();
+    if (o.connected){ meOn.onDisconnect().remove(); meOn.set(true).catch(() => {}); }
+    if (state && !busy) renderFinal();
   });
-  peer.on("connection", conn => {
-    if (online !== o || !o.host) { conn.close(); return; }
-    attachConn(conn);
-  });
-  peer.on("disconnected", () => { if (online === o && !o.dead) { try{ peer.reconnect(); }catch(e){} } });
-  peer.on("error", err => {
+  const oppPresence = () => {
+    const opp = Object.keys(o.players).find(k => k !== f.uid);
+    o.oppOnline = opp ? !!(o.onlineMap || {})[opp] : null;
+    if (state && !busy) renderFinal();
+  };
+  watch(o, room.child("players"), "value", snap => {
     if (online !== o) return;
-    const type = err && err.type;
-    if (type === "peer-unavailable"){
-      if (!state) lobbyNote(t("noHost"), true);
-      later(connectToHost, 3000);
-    } else if (type === "unavailable-id"){
-      // code taken: a brand-new game picks another code; a rejoin waits for the old one to free up
-      if (o.fresh && !state){ const c = genCode(); leaveOnline(false); goOnline(c, true, true); }
-      else { try{ peer.destroy(); }catch(e){} later(startPeer, 4000); }
-    } else if (["network","server-error","socket-error","socket-closed"].includes(type)){
-      lobbyNote(t("connErr"), true);
-      later(() => { try{ peer.destroy(); }catch(e){} startPeer(); }, 4000);
-    }
+    o.players = snap.val() || {};
+    oppPresence();
+    maybeStart(o);
   });
-}
-
-function connectToHost(){
-  const o = online; if (!o || o.host || !o.peer || o.peer.destroyed) return;
-  if (o.conn && o.conn.open) return;
-  const conn = o.peer.connect(PEER_PREFIX + o.code, { reliable:true });
-  attachConn(conn);
-}
-
-function attachConn(conn){
-  const o = online;
-  conn.on("open", () => {
-    if (online !== o) { conn.close(); return; }
-    if (o.conn && o.conn !== conn && o.conn.open && o.host){
-      // second visitor while a friend is connected: only allow if it is the same player coming back
-      o.pendingExtra = conn;
-    } else o.conn = conn;
-    send(conn, hello());
-  });
-  conn.on("data", msg => { if (online === o) onMsg(conn, msg); });
-  conn.on("close", () => {
+  watch(o, room.child("online"), "value", snap => {
     if (online !== o) return;
-    if (o.conn === conn){
-      o.conn = null; o.oppOnline = false;
-      if (state && !busy) renderFinal();
-      if (!o.host) later(connectToHost, 2000);
-    }
+    o.onlineMap = snap.val() || {};
+    oppPresence();
   });
-  conn.on("error", () => {});
+  watch(o, room.child("state"), "value", snap => onRemoteState(o, snap.val()));
 }
 
-function hello(){ return { t:"st", app:"purti", cid:me.cid, name:myName().slice(0,16), host:online && online.host, g: state && state.mode === "online" ? state : null }; }
-function send(conn, msg){ try{ if (conn && conn.open) conn.send(msg); }catch(e){} }
-function pushPresence(){ if (online && online.conn) send(online.conn, hello()); }
+// once both players are in and there is no game yet, either side may deal; the first write wins
+async function maybeStart(o){
+  if (online !== o || !o.stateLoaded || state || !fb) return;
+  const ids = Object.keys(o.players);
+  if (ids.length < 2) return;
+  let creator = null;
+  try{ creator = (await o.room.child("created").once("value")).val(); }catch(e){ return; }
+  if (online !== o || state) return;
+  const p1 = ids.includes(creator) ? creator : ids.sort()[0];
+  const p2 = ids.find(x => x !== p1);
+  commit(newRound("online", [{cid:p1, name:String(o.players[p1]).slice(0,16)}, {cid:p2, name:String(o.players[p2]).slice(0,16)}], null));
+}
 
-const better = (a, b) => !b || a.seq > b.seq || (a.seq === b.seq && a.id > b.id);
+function onRemoteState(o, raw){
+  if (online !== o) return;
+  o.stateLoaded = true;
+  if (!raw){ maybeStart(o); return; }
+  let g = null; try{ g = JSON.parse(raw); }catch(e){ return; }
+  if (!validState(g) || g.mode !== "online") return;
+  const idx = g.p.findIndex(x => x && x.cid === fb.uid);
+  if (idx < 0) return;
+  if (state && state.id === g.id && state.seq === g.seq) return;   // already showing it
+  mi = idx;
+  if (screen !== "game") show("game");
+  watchTotals(o, g);
+  setState(g);
+  recordResult(o, g);
+}
 
-function onMsg(conn, msg){
-  const o = online;
-  if (!msg || typeof msg !== "object") return;
-  if (msg.t === "full"){ if (!state) lobbyNote(t("full"), true); return; }
-  if (msg.t !== "st" || msg.app !== "purti" || typeof msg.cid !== "string" || msg.cid === me.cid) return;
+// play a move / new round: show it at once, then save it; the server keeps whichever arrived first
+function commit(ns){
+  if (!(ns.mode === "online" && online && online.room)) { setState(ns); return; }
+  const o = online, raw = JSON.stringify(ns);
+  setState(ns);
+  recordResult(o, ns);
+  o.room.child("state").transaction(cur => {
+    if (cur){ try{ const c = JSON.parse(cur); if (c.seq >= ns.seq) return; }catch(e){} }
+    return raw;
+  }, () => {}, false);
+}
 
-  // host: decide whether this connection is our player
-  if (o.host){
-    const known = state && state.mode === "online" ? state.p[1].cid : null;
-    if (known && msg.cid !== known){ send(conn, { t:"full" }); setTimeout(() => conn.close(), 300); return; }
-    if (o.conn !== conn){ if (o.conn) try{ o.conn.close(); }catch(e){} o.conn = conn; }
-  }
-  o.oppOnline = true;
-
-  const g = msg.g;
-  if (validState(g) && g.mode === "online" && g.p.some(x => x && x.cid === me.cid) && better(g, state)){
-    mi = g.p.findIndex(x => x.cid === me.cid);
-    if (screen !== "game") show("game");
-    setState(g);
-    return;
-  }
-  if (!state && o.host){
-    mi = 0;
-    show("game");
-    setState(newRound("online", [{cid:me.cid, name:myName().slice(0,16)}, {cid:msg.cid, name:String(msg.name || "Friend").slice(0,16)}], null));
-    return;
-  }
-  if (state){
-    // they are behind (e.g. just reconnected): send them our state
-    if (!validState(g) || better(state, g)) pushPresence();
+function watchTotals(o, g){
+  const key = pairKey(g.p[0].name, g.p[1].name);
+  if (o.totalsKey === key) return;
+  o.totalsKey = key;
+  watch(o, fb.db.ref("results/" + key), "value", snap => {
+    if (online !== o || !state) return;
+    const mine = nameKey(state.p[mi].name), theirs = nameKey(state.p[1 - mi].name);
+    const tot = { mine:0, theirs:0, draws:0, games:0 };
+    snap.forEach(ch => {
+      const r = ch.val() || {};
+      tot.games++;
+      if (!r.w) tot.draws++;
+      else if (r.w === mine) tot.mine++;
+      else if (r.w === theirs) tot.theirs++;
+    });
+    o.totals = tot;
     if (!busy) renderFinal();
-  }
+    if (openModal === showResult) showResult();
+  });
+}
+
+function recordResult(o, g){
+  if (!g.over || !g.res || o.recorded.has(g.id) || !fb) return;
+  o.recorded.add(g.id);
+  const w = g.res.w >= 0 ? nameKey(g.p[g.res.w].name) : "";
+  // both players may write the same entry; the rules only accept the first
+  fb.db.ref("results/" + pairKey(g.p[0].name, g.p[1].name) + "/" + g.id)
+    .set({ w, t: firebase.database.ServerValue.TIMESTAMP }).catch(() => {});
+}
+
+function totalsLine(s, myN, oppName){
+  const tot = s.mode === "online" && online && online.totals;
+  if (!tot || !tot.games) return "";
+  return `<div class="result-sub" style="margin-top:-10px">${esc(t("allTime"))}: ${esc(myN)} ${tot.mine} – ${tot.theirs} ${esc(oppName)}${tot.draws ? ` · ${tot.draws} ${esc(t("drawsW"))}` : ""}</div>`;
 }
 
 function leaveOnline(clearSession){
   if (!online) return;
-  online.dead = true;
-  online.timers.forEach(clearTimeout);
-  try{ if (online.conn) online.conn.close(); }catch(e){}
-  try{ if (online.peer) online.peer.destroy(); }catch(e){}
+  online.subs.forEach(fn => { try{ fn(); }catch(e){} });
   online = null;
   if (clearSession) store.del("session");
 }
