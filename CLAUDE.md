@@ -13,7 +13,7 @@ A web version of ფურთი, the Georgian card game of elevens, built for f
 - Data: `rooms/<CODE>/{created, guest, players, state, online}`; `created` and `guest` hold the two seats' uids (RTDB rules have no `numChildren`, so seats cap the room at two). `state` is the whole game as a JSON string (strings avoid Firebase dropping empty arrays). Moves are shown locally at once and saved with a transaction that only accepts a higher `seq`, so the first write wins and everyone follows the server copy. `online/<uid>` is presence via `onDisconnect`.
 - Running totals: `results/<pair>/<gameId> = {w, t}`, where `<pair>` is the two lowercase names, sorted. Both clients write the same entry; the rules only accept the first, so each game counts once. Totals are counted client-side.
 - Players are anonymous Firebase users; the uid is kept per browser, so rejoining works on the same browser/device, not from a different one. `?guest` in the URL gives a tab its own uid for testing.
-- Languages: English, Georgian, French (`T.en` / `T.ka` / `T.fr`; `LANGS` sets the button order and labels EN · ქარ · FR, and a tap cycles to the next). Name, language and the last room are kept in localStorage. A name is required for online play.
+- Languages: English, Georgian, French (`T.en` / `T.ka` / `T.fr`; `LANGS` sets the switcher: three buttons EN · ქარ · FR, tap one to pick it). Name, language and the last room are kept in localStorage. A name is required for online play.
 - Rules: 4 cards each, 4 on the table; number cards (Ace = 1) take table number cards that add to 11 with them; K takes K, Q takes Q; the Jack takes everything except Q and K; clearing the table gives a ★; leftovers go to the last capturer; most cards wins, ★ breaks ties.
 
 ## Status

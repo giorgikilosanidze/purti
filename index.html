@@ -50,9 +50,11 @@ input{font:inherit}
 .icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.06);border:1px solid rgba(226,188,106,.25);font-size:17px;font-weight:700;flex:none}
 .icon-btn:hover{background:rgba(226,188,106,.14)}
-.lang-btn{display:flex;align-items:center;font-size:13px;width:auto;padding:0 12px;border-radius:20px;color:var(--muted);font-weight:600;white-space:nowrap}
-.lang-btn b{color:var(--gold);font-weight:800}
-.lang-btn i{font-style:normal;opacity:.45;margin:0 5px}
+.lang-switch{display:flex;align-items:center;height:40px;padding:3px;gap:2px;border-radius:20px;flex:none;
+  background:rgba(255,255,255,.06);border:1px solid rgba(226,188,106,.25)}
+.lang-switch button{height:100%;min-width:34px;padding:0 9px;border-radius:16px;font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;transition:background .2s,color .2s}
+.lang-switch button:hover{color:var(--cream)}
+.lang-switch button.on{background:linear-gradient(180deg,#f2d58f,var(--gold) 45%,var(--gold2));color:#2a1406;font-weight:800}
 .link{color:var(--gold);text-decoration:underline;text-underline-offset:3px;font-weight:600}
 
 /* ---------- home ---------- */
@@ -226,7 +228,7 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 
 <!-- HOME -->
 <section id="home" class="screen">
-  <div class="home-top"><button class="icon-btn lang-btn" data-act="lang" aria-label="Language"></button></div>
+  <div class="home-top"><div class="lang-switch" role="group" aria-label="Language"></div></div>
   <div class="home-inner">
     <div class="fan" id="fan"></div>
     <h1 class="logo">ფურთი</h1>
@@ -273,7 +275,7 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
     <button class="icon-btn" data-act="leave" aria-label="Menu">←</button>
     <div class="mid"><div class="t">ფურთი</div><div class="sub" id="subline"></div></div>
     <button class="icon-btn" data-act="rules" aria-label="Rules">?</button>
-    <button class="icon-btn lang-btn" data-act="lang" aria-label="Language"></button>
+    <div class="lang-switch" role="group" aria-label="Language"></div>
   </div>
   <div class="zone" id="oppZone">
     <div class="tag"><div class="avatar" id="oppAv"></div><span class="pname" id="oppName"></span><span class="chip" id="oppCards"></span><span class="chip" id="oppSw"></span><span class="chip off hidden" id="oppOff"></span></div>
@@ -443,8 +445,9 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">"
 
 function applyLang(){
   document.documentElement.lang = lang;
-  const langHTML = LANGS.map(([code, label]) => code === lang ? `<b>${label}</b>` : `<span>${label}</span>`).join("<i>·</i>");
-  document.querySelectorAll(".lang-btn").forEach(b => { b.innerHTML = langHTML; });
+  const langHTML = LANGS.map(([code, label]) =>
+    `<button type="button" data-act="lang" data-lang="${code}" lang="${code}" class="${code === lang ? "on" : ""}" aria-pressed="${code === lang}">${label}</button>`).join("");
+  document.querySelectorAll(".lang-switch").forEach(b => { b.innerHTML = langHTML; });
   document.querySelectorAll("[data-i]").forEach(el => { el.textContent = t(el.dataset.i); });
   const ni = $("nameInput"); ni.placeholder = t("defName");
   $("codeInput").placeholder = "ABCD";
@@ -1018,7 +1021,7 @@ function saveName(){ me.name = $("nameInput").value.trim().slice(0,16); store.se
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const a = b.dataset.act;
-  if (a === "lang"){ const i = LANGS.findIndex(l => l[0] === lang); lang = LANGS[(i + 1) % LANGS.length][0]; store.set("lang", lang); applyLang(); }
+  if (a === "lang"){ const l = b.dataset.lang; if (T[l] && l !== lang){ lang = l; store.set("lang", lang); applyLang(); } }
   else if (a === "rules") showRules();
   else if (a === "ai") startAI();
   else if (a === "friend") openLobby();
