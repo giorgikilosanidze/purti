@@ -783,7 +783,10 @@ function openLobby(){
   fbInit().catch(e => lobbyNote(t(e && e.message === "notSetup" ? "notSetup" : "noRoom"), true));
 }
 
-function watch(o, ref, ev, cb){ ref.on(ev, cb, () => {}); o.subs.push(() => ref.off(ev, cb)); }
+function watch(o, ref, ev, cb){
+  ref.on(ev, cb, err => console.warn("purti: listener cancelled", ref.toString(), err && err.message));
+  o.subs.push(() => ref.off(ev, cb));
+}
 
 async function goOnline(code, host, fresh){
   if (online) leaveOnline(false);
@@ -870,7 +873,16 @@ async function maybeStart(o){
   if (online !== o || state) return;
   const p1 = ids.includes(creator) ? creator : ids.sort()[0];
   const p2 = ids.find(x => x !== p1);
-  commit(newRound("online", [{cid:p1, name:String(o.players[p1]).slice(0,16)}, {cid:p2, name:String(o.players[p2]).slice(0,16)}], null));
+  const ns = newRound("online", [{cid:p1, name:String(o.players[p1]).slice(0,16)}, {cid:p2, name:String(o.players[p2]).slice(0,16)}], null);
+  enterGame(o, ns);
+  commit(ns);
+}
+
+// take my seat in this game and switch to the game screen
+function enterGame(o, g){
+  mi = g.p.findIndex(x => x && x.cid === fb.uid);
+  if (screen !== "game") show("game");
+  watchTotals(o, g);
 }
 
 function onRemoteState(o, raw){
@@ -882,9 +894,7 @@ function onRemoteState(o, raw){
   const idx = g.p.findIndex(x => x && x.cid === fb.uid);
   if (idx < 0) return;
   if (state && state.id === g.id && state.seq === g.seq) return;   // already showing it
-  mi = idx;
-  if (screen !== "game") show("game");
-  watchTotals(o, g);
+  enterGame(o, g);
   setState(g);
   recordResult(o, g);
 }
@@ -898,7 +908,7 @@ function commit(ns){
   o.room.child("state").transaction(cur => {
     if (cur){ try{ const c = JSON.parse(cur); if (c.seq >= ns.seq) return; }catch(e){} }
     return raw;
-  }, () => {}, false);
+  }, err => { if (err) console.warn("purti: save failed", err.message); }, false);
 }
 
 function watchTotals(o, g){
