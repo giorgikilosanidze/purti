@@ -85,6 +85,10 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 .panel .back{position:absolute;top:16px;left:16px}
 .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;margin:20px 0 12px}
 .divider:before,.divider:after{content:"";flex:1;height:1px;background:rgba(226,188,106,.2)}
+.size-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;color:var(--muted);font-size:15px}
+.size-pick{display:flex;padding:3px;gap:3px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(226,188,106,.3)}
+.size-pick button{width:52px;height:38px;border-radius:11px;font-weight:800;font-size:17px;color:var(--muted)}
+.size-pick button.on{background:linear-gradient(180deg,#f2d58f,var(--gold) 45%,var(--gold2));color:#2a1406}
 .join-row{display:flex;gap:10px}
 .join-row .input{text-transform:uppercase;letter-spacing:6px;font-weight:700;text-align:center}
 .join-row .btn{width:auto;padding:0 22px}
@@ -115,6 +119,18 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 .chip.off{border-color:#a5463c;color:#ffb3a8}
 .hand{display:flex;justify-content:center;align-items:flex-end;gap:clamp(6px,2vw,14px);min-height:calc(var(--cw) * 1.4 + 16px);padding-top:16px}
 .hand .card{--w:var(--cw)}
+.opps{display:flex;justify-content:center;align-items:flex-start;gap:6px;padding:0 6px}
+.opps .zone.opp{min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+/* 4 players: three compact opponents side by side */
+.opps.four .zone.opp{flex:1 1 0;padding:4px 2px;gap:4px;border-radius:14px}
+.opps.four .zone.opp.active{background:rgba(226,188,106,.07)}
+.opps.four .tag{flex-direction:column;gap:3px;min-height:0;font-size:13px}
+.opps.four .pname{max-width:100%}
+.opps.four .chips{gap:3px}
+.opps.four .chip{font-size:11px;padding:2px 6px}
+.opps.four .avatar{width:28px;height:28px;font-size:13px}
+.opps.four .opp-hand{--bw:min(7vw,5.5vh,40px)}
 .opp-hand{display:flex;justify-content:center;min-height:calc(var(--bw) * 1.4)}
 .opp-hand .card{--w:var(--bw)}
 .opp-hand .card + .card{margin-left:calc(var(--bw) * -0.42)}
@@ -210,6 +226,9 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 .rtable td,.rtable th{padding:10px 8px;text-align:center;border-bottom:1px solid rgba(226,188,106,.15)}
 .rtable th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
 .rtable td:first-child,.rtable th:first-child{text-align:left}
+.rtable.four td,.rtable.four th{padding:9px 3px;font-size:14px}
+.rtable.four .pt{margin-left:2px;padding:1px 5px;font-size:11px}
+.rtable.four th .nm{max-width:16vw}
 .rtable th .nm{display:inline-block;max-width:30vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;text-transform:none;letter-spacing:0;font-size:13px;color:var(--cream)}
 .rtable td.got{color:var(--cream);font-weight:700}
 .rtable .pt{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:10px;font-size:12px;font-weight:800;background:rgba(226,188,106,.18);color:var(--gold);border:1px solid rgba(226,188,106,.4)}
@@ -257,6 +276,9 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
     <button class="icon-btn back" data-act="home" aria-label="Back">←</button>
     <h2 data-i="playFriend"></h2>
     <div id="lobbyChoose">
+      <div class="size-row"><span data-i="howMany"></span>
+        <div class="size-pick" role="group"><button type="button" data-act="size" data-size="2">2</button><button type="button" data-act="size" data-size="4">4</button></div>
+      </div>
       <button class="btn primary" data-act="create" data-i="create"></button>
       <div class="divider" data-i="orJoin"></div>
       <form class="join-row" id="joinForm">
@@ -269,6 +291,7 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
       <div class="code" id="codeShow"></div>
       <button class="btn ghost" data-act="copy" id="copyBtn" data-i="copy"></button>
       <div class="wait"><span class="dots"><i></i><i></i><i></i></span><span id="waitText"></span></div>
+      <p class="note" id="lobbyPlayers"></p>
     </div>
     <p class="note" id="lobbyNote"></p>
   </div>
@@ -282,10 +305,7 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
     <button class="icon-btn" data-act="rules" aria-label="Rules">?</button>
     <div class="lang-switch" role="group" aria-label="Language"></div>
   </div>
-  <div class="zone" id="oppZone">
-    <div class="tag"><div class="avatar" id="oppAv"></div><span class="pname" id="oppName"></span><span class="chip" id="oppCards"></span><span class="chip" id="oppClubs"></span><span class="chip off hidden" id="oppOff"></span></div>
-    <div class="opp-hand" id="oppHand"></div>
-  </div>
+  <div class="opps" id="opps"></div>
   <div class="felt"><div class="felt-mark">11</div><div class="table-cards" id="table"></div></div>
   <div class="statusbar">
     <div class="deckmini"><div class="card back"></div><span id="deckCount">0</span></div>
@@ -329,6 +349,9 @@ const T = {
     shareCode:"Send this code to your friend. They open this page, tap “Play with a friend” and enter it.",
     copy:"Copy code", copied:"Copied!",
     waiting:"Waiting for your friend…", connecting:"Looking for the game…",
+    howMany:"How many players?", waitingN:"Waiting for players… {k}/{n}",
+    shareCode4:"Send this code to the 3 other players. They open this page, tap “Play with a friend” and enter it.",
+    nameTaken:"Someone in this game already has that name. Change your name and try again.",
     noHost:"There’s no game with this code. Check the code and try again.",
     full:"This game already has two players.",
     noRoom:"Online play couldn’t load. Check your internet connection and reload the page.",
@@ -343,9 +366,10 @@ const T = {
     cards:"<b>{n}</b> cards",
     round:"Round {n}", vs:"vs {n}",
     win:"You win!", lose:"{n} wins", draw:"It’s a draw!",
-    resultSub:"Round {r} · Match {a}–{b}",
+    resultSub:"Round {r} · Match {m}",
     ptMost:"Most cards", ptClubs:"Most clubs", ptTotal:"Points",
-    cardTie:"Cards were tied 26–26, so nobody got the 2 points.",
+    cardTie:"Most cards was a tie, so nobody got those 2 points.",
+    clubTie:"Most clubs was a tie, so nobody got that point.",
     playAgain:"Play again", menu:"Menu", close:"Got it", offline:"offline",
     waitingRematch:"Waiting for a new round…",
     rulesTitle:"How to play",
@@ -367,6 +391,9 @@ const T = {
     shareCode:"გაუგზავნე ეს კოდი მეგობარს. ის ხსნის ამ გვერდს, აჭერს „ითამაშე მეგობართან“ და წერს კოდს.",
     copy:"კოდის კოპირება", copied:"დაკოპირდა!",
     waiting:"ველოდებით მეგობარს…", connecting:"თამაშს ვეძებთ…",
+    howMany:"რამდენი მოთამაშე?", waitingN:"ველოდებით მოთამაშეებს… {k}/{n}",
+    shareCode4:"გაუგზავნე ეს კოდი დანარჩენ 3 მოთამაშეს. ისინი ხსნიან ამ გვერდს, აჭერენ „ითამაშე მეგობართან“ და წერენ კოდს.",
+    nameTaken:"ამ თამაშში ეს სახელი უკვე დაკავებულია. შეცვალე სახელი და სცადე თავიდან.",
     noHost:"ამ კოდით თამაში არ მოიძებნა. შეამოწმე კოდი და სცადე თავიდან.",
     full:"ამ თამაშში უკვე ორი მოთამაშეა.",
     noRoom:"ონლაინ თამაში ვერ ჩაიტვირთა. შეამოწმე ინტერნეტი და განაახლე გვერდი.",
@@ -381,9 +408,10 @@ const T = {
     cards:"<b>{n}</b> კარტი",
     round:"რაუნდი {n}", vs:"vs {n}",
     win:"მოიგე!", lose:"მოიგო: {n}", draw:"ფრეა!",
-    resultSub:"რაუნდი {r} · ანგარიში {a}–{b}",
+    resultSub:"რაუნდი {r} · ანგარიში {m}",
     ptMost:"მეტი კარტი", ptClubs:"მეტი ჯვარი", ptTotal:"ქულები",
-    cardTie:"კარტები თანაბრად გაიყო (26–26), ამიტომ 2 ქულა არავის ერგო.",
+    cardTie:"მეტი კარტი რამდენიმე მოთამაშეს თანაბრად ჰქონდა, ამიტომ 2 ქულა არავის ერგო.",
+    clubTie:"მეტი ჯვარი რამდენიმე მოთამაშეს თანაბრად ჰქონდა, ამიტომ ეს ქულა არავის ერგო.",
     playAgain:"კიდევ ერთხელ", menu:"მენიუ", close:"გასაგებია", offline:"გავიდა",
     waitingRematch:"ველოდებით ახალ რაუნდს…",
     rulesTitle:"როგორ ვითამაშოთ",
@@ -405,6 +433,9 @@ const T = {
     shareCode:"Envoie ce code à ton ami. Il ouvre cette page, appuie sur « Jouer avec un ami » et le saisit.",
     copy:"Copier le code", copied:"Copié !",
     waiting:"En attente de ton ami…", connecting:"Recherche de la partie…",
+    howMany:"Combien de joueurs ?", waitingN:"En attente des joueurs… {k}/{n}",
+    shareCode4:"Envoie ce code aux 3 autres joueurs. Ils ouvrent cette page, appuient sur « Jouer avec un ami » et le saisissent.",
+    nameTaken:"Quelqu’un dans cette partie a déjà ce nom. Change ton nom et réessaie.",
     noHost:"Aucune partie avec ce code. Vérifie le code et réessaie.",
     full:"Cette partie a déjà deux joueurs.",
     noRoom:"Le jeu en ligne n’a pas pu se charger. Vérifie ta connexion internet et recharge la page.",
@@ -419,9 +450,10 @@ const T = {
     cards:"<b>{n}</b> cartes",
     round:"Manche {n}", vs:"contre {n}",
     win:"Tu as gagné !", lose:"{n} gagne", draw:"Match nul !",
-    resultSub:"Manche {r} · Score {a}–{b}",
+    resultSub:"Manche {r} · Score {m}",
     ptMost:"Plus de cartes", ptClubs:"Plus de trèfles", ptTotal:"Points",
-    cardTie:"Cartes à égalité (26–26) : personne ne marque les 2 points.",
+    cardTie:"Égalité pour le plus de cartes : personne ne marque ces 2 points.",
+    clubTie:"Égalité pour le plus de trèfles : personne ne marque ce point.",
     playAgain:"Rejouer", menu:"Menu", close:"Compris", offline:"hors ligne",
     waitingRematch:"En attente d’une nouvelle manche…",
     rulesTitle:"Comment jouer",
@@ -437,8 +469,9 @@ const T = {
   }
 };
 const LANGS = [["en","EN"], ["ka","ქარ"], ["fr","FR"]];
-const GUEST = /[?&]guest\b/.test(location.search);
-const SP = GUEST ? "purti.guest." : "purti.";
+// ?guest, ?guest=2, ?guest=3 … : a test player with its own sign-in and saved settings (to play several seats in one browser)
+const GUEST = (() => { const m = location.search.match(/[?&]guest(?:=([\w-]{1,12}))?(?:&|$)/); return m ? (m[1] || "1") : ""; })();
+const SP = GUEST ? "purti.guest" + GUEST + "." : "purti.";
 const store = {
   get(k){ try{ return JSON.parse(localStorage.getItem(SP+k)); }catch(e){ return null; } },
   set(k,v){ try{ localStorage.setItem(SP+k, JSON.stringify(v)); }catch(e){} },
@@ -492,9 +525,12 @@ function captureFor(card, table){
   return best;
 }
 
+// 4 cards to each player, starting with whoever's turn it is
 function deal(s){
-  for (let i = 0; i < 4; i++) for (const p of [s.turn, 1 - s.turn]) if (s.deck.length) s.h[p].push(s.deck.pop());
+  const n = s.p.length;
+  for (let i = 0; i < 4; i++) for (let k = 0; k < n; k++) if (s.deck.length) s.h[(s.turn + k) % n].push(s.deck.pop());
 }
+const zeros = n => Array(n).fill(0);
 
 const STATE_V = 2;   // bump when the saved game format changes; older saved games are replaced
 function newRound(mode, players, prev){
@@ -503,10 +539,11 @@ function newRound(mode, players, prev){
   shuffle(deck);
   const table = [];
   while (table.length < 4){ const c = deck.pop(); if (rank(c) === "J") deck.unshift(c); else table.push(c); }
-  const starter = prev ? 1 - prev.starter : 0;
-  const s = { v:STATE_V, id:rid(), seq:(prev ? prev.seq + 1 : 1), mode, p:players, deck, table, h:[[],[]],
-    cap:[0,0], cl:[0,0], c2:-1, d10:-1, last:-1, turn:starter, starter, over:false, res:null,
-    wins: prev ? prev.wins.slice() : [0,0], round: prev ? prev.round + 1 : 1, lm:null, mn:0 };
+  const n = players.length;
+  const starter = prev ? (prev.starter + 1) % n : 0;   // the first player moves round by round
+  const s = { v:STATE_V, id:rid(), seq:(prev ? prev.seq + 1 : 1), mode, p:players, deck, table, h:players.map(() => []),
+    cap:zeros(n), cl:zeros(n), c2:-1, d10:-1, last:-1, turn:starter, starter, over:false, res:null,
+    wins: prev ? prev.wins.slice() : zeros(n), round: prev ? prev.round + 1 : 1, lm:null, mn:0 };
   deal(s);
   return s;
 }
@@ -521,16 +558,22 @@ function collect(s, pi, cards){
   s.cap[pi] += cards.length;
 }
 
-// 5 points a round: most cards 2 (nobody on a 26–26 tie), 2♣ 1, 10♦ 1, most clubs 1
+// index of the single highest value, or -1 if the top is shared
+function lead(a){
+  const top = Math.max(...a);
+  return a.indexOf(top) === a.lastIndexOf(top) ? a.indexOf(top) : -1;
+}
+
+// 5 points a round: most cards 2, 2♣ 1, 10♦ 1, most clubs 1.
+// A shared lead in cards or clubs earns nobody those points; a shared top score is a draw (w = -1).
 function scoreRound(s){
-  const lead = (a, b) => a === b ? -1 : (a > b ? 0 : 1);
-  const most = lead(s.cap[0], s.cap[1]), clubs = lead(s.cl[0], s.cl[1]);
-  const pts = [0,0];
+  const most = lead(s.cap), clubs = lead(s.cl);
+  const pts = zeros(s.p.length);
   if (most >= 0) pts[most] += 2;
   if (s.c2 >= 0) pts[s.c2] += 1;
   if (s.d10 >= 0) pts[s.d10] += 1;
   if (clubs >= 0) pts[clubs] += 1;
-  return { w: lead(pts[0], pts[1]), pts, most, clubs };
+  return { w: lead(pts), pts, most, clubs };
 }
 
 function applyMove(s0, pi, card){
@@ -547,8 +590,8 @@ function applyMove(s0, pi, card){
   } else s.table.push(card);
   s.mn++;
   s.lm = { n:s.mn, by:pi, c:card, tb, t:took };
-  s.turn = 1 - pi;
-  if (!s.h[0].length && !s.h[1].length){
+  s.turn = (pi + 1) % s.p.length;
+  if (s.h.every(h => !h.length)){
     if (s.deck.length) deal(s);
     else {
       collect(s, s.last >= 0 ? s.last : pi, s.table);   // leftovers go to whoever took last
@@ -594,11 +637,13 @@ function validState(g){
     if (!g || typeof g !== "object" || g.v !== STATE_V) return false;
     if (typeof g.id !== "string" || typeof g.seq !== "number") return false;
     if (!Array.isArray(g.cap) || !Array.isArray(g.cl) || typeof g.c2 !== "number" || typeof g.d10 !== "number") return false;
-    if (!Array.isArray(g.p) || g.p.length !== 2) return false;
-    const all = [].concat(g.deck, g.table, g.h[0], g.h[1]);
+    if (!Array.isArray(g.p) || ![2,4].includes(g.p.length)) return false;
+    const n = g.p.length;
+    if (!Array.isArray(g.h) || g.h.length !== n || g.cap.length !== n || g.cl.length !== n || !Array.isArray(g.wins) || g.wins.length !== n) return false;
+    const all = [].concat(g.deck, g.table, ...g.h);
     if (!all.every(c => typeof c === "string" && CARD_RE.test(c))) return false;
     if (g.lm && ![g.lm.c].concat(g.lm.tb, g.lm.t).every(c => typeof c === "string" && CARD_RE.test(c))) return false;
-    return [0,1].includes(g.turn);
+    return Number.isInteger(g.turn) && g.turn >= 0 && g.turn < n;
   }catch(e){ return false; }
 }
 
@@ -626,7 +671,7 @@ let shownLm = null;
 let aiTimer = null;
 let seenHand = new Set();
 let openModal = null;
-let online = null;         // {code, host, room, unsubs:[], oppOnline}
+let online = null;         // {code, host, size, room, subs:[], players, onlineMap, ...} while in an online game
 
 const myName = () => (me.name || "").trim() || t("defName");
 
@@ -642,28 +687,33 @@ function renderFinal(){ renderState(state, null); }
 
 function renderState(s, anim){
   if (!s) return;
-  const oi = 1 - mi;
-  const oppName = s.mode === "ai" ? t("computer") : (s.p[oi] && s.p[oi].name) || "…";
+  const others = seatOrder(s).slice(1);          // opponents in playing order after me
   const myN = s.mode === "ai" ? myName() : (s.p[mi] && s.p[mi].name) || myName();
-  $("oppName").textContent = oppName; $("oppAv").textContent = s.mode === "ai" ? "🤖" : initials(oppName);
   $("myName").textContent = myN; $("myAv").textContent = initials(myN);
-  const clubsChip = i => `♣ <b>${s.cl[i]}</b>` + (s.c2 === i ? ` · <b>2♣</b>` : "") + (s.d10 === i ? ` · <b class="red">10♦</b>` : "");
-  $("oppCards").innerHTML = t("cards", {n:s.cap[oi]}); $("oppClubs").innerHTML = clubsChip(oi);
-  $("myCards").innerHTML = t("cards", {n:s.cap[mi]}); $("myClubs").innerHTML = clubsChip(mi);
-  const off = $("oppOff");
-  off.classList.toggle("hidden", !(online && s.mode === "online" && online.oppOnline === false));
-  off.textContent = t("offline");
+  $("myCards").innerHTML = t("cards", {n:s.cap[mi]}); $("myClubs").innerHTML = clubsChip(s, mi);
   const moff = $("myOff");
   moff.classList.toggle("hidden", !(online && s.mode === "online" && online.connected === false));
   moff.textContent = t("reconnecting");
   $("deckCount").textContent = s.deck.length;
-  const tot = s.mode === "online" && online && online.totals;
-  $("subline").textContent = t("round", {n:s.round}) + " · " + t("vs", {n:oppName})
-    + (tot && tot.games ? ` · ${t("allTime")} ${tot.mine}–${tot.theirs}` : "");
-  $("matchScore").textContent = `${s.wins[mi]}–${s.wins[oi]}`;
 
-  // opponent hand
-  $("oppHand").innerHTML = s.h[oi].map(() => backHTML()).join("");
+  // opponents: one in a 2-player game, three in a 4-player game
+  const opps = $("opps");
+  opps.classList.toggle("four", others.length > 1);
+  opps.innerHTML = others.map(i => {
+    const nm = playerName(s, i);
+    const off = online && s.mode === "online" && online.onlineMap && !online.onlineMap[s.p[i].cid];
+    const active = !s.over && s.turn === i && !anim;
+    return `<div class="zone opp ${active ? "active" : ""}">
+      <div class="tag"><div class="avatar">${s.mode === "ai" ? "🤖" : esc(initials(nm))}</div><span class="pname">${esc(nm)}</span>
+        <span class="chips"><span class="chip">${t("cards", {n:s.cap[i]})}</span><span class="chip">${clubsChip(s, i)}</span>${off ? `<span class="chip off">${esc(t("offline"))}</span>` : ""}</span></div>
+      <div class="opp-hand">${s.h[i].map(() => backHTML()).join("")}</div></div>`;
+  }).join("");
+
+  const tt = totalsFor(s);
+  $("subline").textContent = t("round", {n:s.round})
+    + (others.length === 1 ? " · " + t("vs", {n:playerName(s, others[0])}) : "")
+    + (tt ? ` · ${t("allTime")} ${tt.list.map(x => x.wins).join("–")}` : "");
+  $("matchScore").textContent = seatOrder(s).map(i => s.wins[i]).join("–");
 
   // table
   const tbl = $("table");
@@ -691,14 +741,21 @@ function renderState(s, anim){
   // zones & status
   const myTurn = !s.over && s.turn === mi;
   $("myZone").classList.toggle("active", myTurn && !anim);
-  $("oppZone").classList.toggle("active", !s.over && s.turn !== mi && !anim);
   const st = $("status");
   st.classList.toggle("mine", myTurn);
   if (anim || s.over) st.textContent = "";
   else if (myTurn){
     st.textContent = sel ? t("tapAgain") : t("yourTurn");
-  } else st.textContent = s.mode === "ai" ? t("aiThinking") : t("theirTurn", {n:oppName});
+  } else st.textContent = s.mode === "ai" ? t("aiThinking") : t("theirTurn", {n:playerName(s, s.turn)});
 }
+
+// seats starting with mine, then in playing order
+function seatOrder(s){ const n = s.p.length; return Array.from({length:n}, (_, k) => (mi + k) % n); }
+function playerName(s, i){
+  if (s.mode === "ai") return i === mi ? myName() : t("computer");
+  return (s.p[i] && s.p[i].name) || "…";
+}
+function clubsChip(s, i){ return `♣ <b>${s.cl[i]}</b>` + (s.c2 === i ? ` · <b>2♣</b>` : "") + (s.d10 === i ? ` · <b class="red">10♦</b>` : ""); }
 
 function canPlay(){ return state && !state.over && state.turn === mi && !busy; }
 
@@ -772,28 +829,27 @@ function showRules(){
 function showResult(){
   const s = state; if (!s || !s.over) return;
   openModal = showResult;
-  const oi = 1 - mi;
-  const oppName = s.mode === "ai" ? t("computer") : s.p[oi].name;
-  const myN = s.mode === "ai" ? myName() : s.p[mi].name;
+  const cols = seatOrder(s);                    // me first, then the others in playing order
   const w = s.res.w;
-  const title = w < 0 ? t("draw") : (w === mi ? t("win") : t("lose", {n:esc(oppName)}));
+  const title = w < 0 ? t("draw") : (w === mi ? t("win") : t("lose", {n:esc(playerName(s, w))}));
   const r = s.res;
   // one cell: what the player has, plus the points it earned
   const cell = (shown, pts) => `<td class="${pts ? "got" : ""}">${shown}${pts ? ` <span class="pt">+${pts}</span>` : ""}</td>`;
   const owns = (who, i, p) => cell(who === i ? "✓" : "—", who === i ? p : 0);
-  const line = (label, f) => `<tr><td>${label}</td>${f(mi)}${f(oi)}</tr>`;
+  const line = (label, f) => `<tr><td>${label}</td>${cols.map(f).join("")}</tr>`;
   const rows =
     line(esc(t("ptMost")), i => cell(s.cap[i], r.most === i ? 2 : 0)) +
     line("2♣", i => owns(s.c2, i, 1)) +
     line(`<span class="red">10♦</span>`, i => owns(s.d10, i, 1)) +
     line(esc(t("ptClubs")), i => cell(s.cl[i], r.clubs === i ? 1 : 0)) +
-    `<tr class="total"><td>${esc(t("ptTotal"))}</td><td class="${w === mi ? "win" : ""}">${r.pts[mi]}</td><td class="${w === oi ? "win" : ""}">${r.pts[oi]}</td></tr>`;
+    `<tr class="total"><td>${esc(t("ptTotal"))}</td>${cols.map(i => `<td class="${w === i ? "win" : ""}">${r.pts[i]}</td>`).join("")}</tr>`;
+  const ties = (r.most < 0 ? [t("cardTie")] : []).concat(r.clubs < 0 ? [t("clubTie")] : []);
   modal(`<div style="text-align:center;font-size:40px">${w === mi ? "🏆" : (w < 0 ? "🤝" : "🃏")}</div>
     <div class="result-title">${title}</div>
-    <div class="result-sub">${esc(t("resultSub", {r:s.round, a:s.wins[mi], b:s.wins[oi]}))}</div>
-    ${totalsLine(s, myN, oppName)}
-    <table class="rtable"><tr><th></th><th><span class="nm">${esc(myN)}</span></th><th><span class="nm">${esc(oppName)}</span></th></tr>${rows}</table>
-    ${r.most < 0 ? `<p class="note" style="margin:0 0 6px">${esc(t("cardTie"))}</p>` : ""}
+    <div class="result-sub">${esc(t("resultSub", {r:s.round, m:cols.map(i => s.wins[i]).join("–")}))}</div>
+    ${totalsLine(s)}
+    <table class="rtable ${cols.length > 2 ? "four" : ""}"><tr><th></th>${cols.map(i => `<th><span class="nm">${esc(playerName(s, i))}</span></th>`).join("")}</tr>${rows}</table>
+    ${ties.map(x => `<p class="note" style="margin:0 0 6px">${esc(x)}</p>`).join("")}
     <div class="btn-row"><button class="btn ghost" data-x="menu">${esc(t("menu"))}</button><button class="btn primary" data-x="again">${esc(t("playAgain"))}</button></div>`,
     root => {
       root.querySelector("[data-x=menu]").onclick = () => { closeModal(); leaveGame(); };
@@ -811,11 +867,14 @@ function startAI(){
 }
 
 /* ================= online (Firebase Realtime Database) =================
-   rooms/<CODE>/created  uid of the player who made the room (player 1)
-   rooms/<CODE>/players  { uid: name } — at most two
+   rooms/<CODE>/created  uid of the player who made the room (seat 0)
+   rooms/<CODE>/size     2 or 4 (missing = 2)
+   rooms/<CODE>/seats    { 1: uid, 2: uid, 3: uid } — the other seats, claimed in order of joining
+   rooms/<CODE>/players  { uid: name }
    rooms/<CODE>/state    the whole game as a JSON string (the one true copy)
    rooms/<CODE>/online   { uid: true } while that player has the page open
-   results/<pair>/<gameId> { w: winner's name (lowercase) or "", t: time } — one entry per finished game */
+   results/<group>/<gameId> { w: winner's name (lowercase) or "" for a draw, t: time } — one entry per finished game;
+     <group> is the players' names, lowercased and sorted, so each pair or foursome has its own record */
 function genCode(){ const a = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 4; i++) s += a[rnd(a.length)]; return s; }
 
 let fbReady = null, fb = null;
@@ -826,8 +885,8 @@ function fbInit(){
     if (typeof firebase === "undefined") return reject(new Error("noRoom"));
     try{
       // ?guest uses a separately named Firebase app, so it signs in as a different player (for testing in one browser)
-      const appName = GUEST ? "guest" : "[DEFAULT]";
-      const app = firebase.apps.find(a => a.name === appName) || (GUEST ? firebase.initializeApp(FIREBASE_CONFIG, "guest") : firebase.initializeApp(FIREBASE_CONFIG));
+      const appName = GUEST ? "guest" + GUEST : "[DEFAULT]";
+      const app = firebase.apps.find(a => a.name === appName) || (GUEST ? firebase.initializeApp(FIREBASE_CONFIG, appName) : firebase.initializeApp(FIREBASE_CONFIG));
       const auth = app.auth(), db = app.database();
       let first = true;
       const un = auth.onAuthStateChanged(u => {
@@ -841,11 +900,21 @@ function fbInit(){
 }
 
 const nameKey = n => String(n || "").trim().toLowerCase().slice(0,16);
-const pairKey = (a, b) => [nameKey(a), nameKey(b)].sort().map(x => encodeURIComponent(x).replace(/\./g, "%2E")).join("~");
+const groupKey = names => names.map(nameKey).sort().map(x => encodeURIComponent(x).replace(/\./g, "%2E")).join("~");
+
+let roomSize = store.get("size") === 4 ? 4 : 2;   // size picked for the next game I create
 
 function lobbyNote(msg, err){ const n = $("lobbyNote"); n.textContent = msg || ""; n.classList.toggle("err", !!err); }
 function refreshLobbyText(){
-  if (online){ $("waitText").textContent = online.host ? t("waiting") : t("connecting"); }
+  document.querySelectorAll("#lobby .size-pick button").forEach(b => b.classList.toggle("on", +b.dataset.size === roomSize));
+  if (!online) return;
+  const names = Object.values(online.players || {});
+  const k = names.length, n = online.size || 2;
+  $("waitText").textContent = !online.room ? t("connecting")
+    : n === 4 ? t("waitingN", {k, n}) : (online.host ? t("waiting") : t("connecting"));
+  $("lobbyPlayers").textContent = n === 4 && k ? names.join(" · ") : "";
+  const sc = document.querySelector('#lobbyWait [data-i="shareCode"]');
+  sc.textContent = t(n === 4 ? "shareCode4" : "shareCode");
 }
 function lobbyChoose(){ $("lobbyChoose").classList.remove("hidden"); $("lobbyWait").classList.add("hidden"); }
 
@@ -861,6 +930,7 @@ function openLobby(){
   show("lobby");
   lobbyChoose();
   lobbyNote("");
+  refreshLobbyText();
   fbInit().catch(e => lobbyNote(t(e && e.message === "notSetup" ? "notSetup" : "noRoom"), true));
 }
 
@@ -869,7 +939,7 @@ function watch(o, ref, ev, cb){
   o.subs.push(() => ref.off(ev, cb));
 }
 
-async function goOnline(code, host, fresh){
+async function goOnline(code, host, fresh, size){
   if (online) leaveOnline(false);
   show("lobby");
   $("lobbyChoose").classList.add("hidden"); $("lobbyWait").classList.remove("hidden");
@@ -878,7 +948,7 @@ async function goOnline(code, host, fresh){
   document.querySelector('#lobbyWait [data-i="shareCode"]').classList.toggle("hidden", !host);
   lobbyNote("");
   state = null;
-  const o = online = { code, host, subs:[], players:{}, stateLoaded:false, oppOnline:null, connected:null, totals:null, totalsKey:null, recorded:new Set(), room:null };
+  const o = online = { code, host, size: size || 2, subs:[], players:{}, onlineMap:{}, stateLoaded:false, connected:null, totals:null, totalsKey:null, recorded:new Set(), room:null };
   refreshLobbyText();
   const fail = (key) => { if (online !== o) return; leaveOnline(false); show("lobby"); lobbyChoose(); lobbyNote(t(key), true); };
 
@@ -899,15 +969,26 @@ async function goOnline(code, host, fresh){
         }
         if (online !== o) return;
       }
+      await room.child("size").set(o.size);
     } else {
-      // a room has two seats: the creator and one guest
-      const [cr, gs] = await Promise.all([room.child("created").once("value"), room.child("guest").once("value")]);
+      // seat 0 is the creator; the others take seats 1..size-1 in the order they join
+      const [cr, sz, st, ps] = await Promise.all(["created", "size", "seats", "players"].map(k => room.child(k).once("value")));
       if (online !== o) return;
       if (!cr.exists()) return fail("noHost");
-      if (cr.val() !== f.uid && gs.val() !== f.uid){
-        if (gs.exists()) return fail("full");
-        try{ await room.child("guest").set(f.uid); }catch(e){ return fail("full"); }
-        if (online !== o) return;
+      o.size = sz.val() === 4 ? 4 : 2;
+      refreshLobbyText();
+      const seats = st.val() || {}, players = ps.val() || {};
+      const mine = cr.val() === f.uid || Object.values(seats).includes(f.uid);
+      if (!mine){
+        const taken = Object.entries(players).some(([uid, nm]) => uid !== f.uid && nameKey(nm) === nameKey(myName()));
+        if (taken) return fail("nameTaken");
+        let got = false;
+        for (let i = 1; i < o.size && !got; i++){
+          if (seats[i]) continue;
+          try{ await room.child("seats/" + i).set(f.uid); got = true; }catch(e){ /* someone took it first; try the next */ }
+          if (online !== o) return;
+        }
+        if (!got) return fail("full");
       }
     }
     await room.child("players/" + f.uid).set(myName().slice(0,16));
@@ -915,6 +996,7 @@ async function goOnline(code, host, fresh){
   if (online !== o) return;
   o.room = room;
   store.set("session", { code, host });
+  refreshLobbyText();
 
   // my presence: true while connected, removed by the server when I drop
   const meOn = room.child("online/" + f.uid);
@@ -925,36 +1007,35 @@ async function goOnline(code, host, fresh){
     if (o.connected){ meOn.onDisconnect().remove(); meOn.set(true).catch(() => {}); }
     if (state && !busy) renderFinal();
   });
-  const oppPresence = () => {
-    const opp = Object.keys(o.players).find(k => k !== f.uid);
-    o.oppOnline = opp ? !!(o.onlineMap || {})[opp] : null;
-    if (state && !busy) renderFinal();
-  };
   watch(o, room.child("players"), "value", snap => {
     if (online !== o) return;
     o.players = snap.val() || {};
-    oppPresence();
+    refreshLobbyText();
+    if (state && !busy) renderFinal();
     maybeStart(o);
   });
   watch(o, room.child("online"), "value", snap => {
     if (online !== o) return;
     o.onlineMap = snap.val() || {};
-    oppPresence();
+    if (state && !busy) renderFinal();
   });
   watch(o, room.child("state"), "value", snap => onRemoteState(o, snap.val()));
 }
 
-// once both players are in and there is no game yet, either side may deal; the first write wins
+// once every seat is filled and there is no game yet, anyone may deal; the first write wins
 async function maybeStart(o){
   if (online !== o || !o.stateLoaded || state || !fb) return;
-  const ids = Object.keys(o.players);
-  if (ids.length < 2) return;
-  let creator = null;
-  try{ creator = (await o.room.child("created").once("value")).val(); }catch(e){ return; }
+  if (Object.keys(o.players).length < o.size) return;
+  let creator = null, seats = {};
+  try{
+    [creator, seats] = await Promise.all([o.room.child("created").once("value"), o.room.child("seats").once("value")]).then(([a, b]) => [a.val(), b.val() || {}]);
+  }catch(e){ return; }
   if (online !== o || state) return;
-  const p1 = ids.includes(creator) ? creator : ids.sort()[0];
-  const p2 = ids.find(x => x !== p1);
-  const ns = newRound("online", [{cid:p1, name:String(o.players[p1]).slice(0,16)}, {cid:p2, name:String(o.players[p2]).slice(0,16)}], null);
+  // seat order is the playing order: creator, then seats 1, 2, 3
+  const order = [creator];
+  for (let i = 1; i < o.size; i++) order.push(seats[i]);
+  if (order.some(uid => !uid || !o.players[uid])) return;   // a seat is claimed but its name isn't saved yet
+  const ns = newRound("online", order.map(uid => ({cid:uid, name:String(o.players[uid]).slice(0,16)})), null);
   enterGame(o, ns);
   commit(ns);
 }
@@ -992,40 +1073,49 @@ function commit(ns){
   }, err => { if (err) console.warn("purti: save failed", err.message); }, false);
 }
 
+// all-time record for exactly this group of players (a pair or a foursome)
 function watchTotals(o, g){
-  const key = pairKey(g.p[0].name, g.p[1].name);
+  const key = groupKey(g.p.map(x => x.name));
   if (o.totalsKey === key) return;
   o.totalsKey = key;
   watch(o, fb.db.ref("results/" + key), "value", snap => {
     if (online !== o || !state) return;
-    const mine = nameKey(state.p[mi].name), theirs = nameKey(state.p[1 - mi].name);
-    const tot = { mine:0, theirs:0, draws:0, games:0 };
+    const tot = { wins:{}, draws:0, games:0 };
     snap.forEach(ch => {
       const r = ch.val() || {};
       tot.games++;
       if (!r.w) tot.draws++;
-      else if (r.w === mine) tot.mine++;
-      else if (r.w === theirs) tot.theirs++;
+      else tot.wins[r.w] = (tot.wins[r.w] || 0) + 1;
     });
     o.totals = tot;
     if (!busy) renderFinal();
     if (openModal === showResult) showResult();
   });
 }
+// all-time wins for each player, in seat order starting with me
+function totalsFor(s){
+  const tot = s.mode === "online" && online && online.totals;
+  if (!tot || !tot.games) return null;
+  return { draws: tot.draws, list: seatOrder(s).map(i => ({ name: s.p[i].name, wins: tot.wins[nameKey(s.p[i].name)] || 0 })) };
+}
 
 function recordResult(o, g){
   if (!g.over || !g.res || o.recorded.has(g.id) || !fb) return;
   o.recorded.add(g.id);
   const w = g.res.w >= 0 ? nameKey(g.p[g.res.w].name) : "";
-  // both players may try to save the same game; only the first one is kept
-  fb.db.ref("results/" + pairKey(g.p[0].name, g.p[1].name) + "/" + g.id)
+  // every player may try to save the same game; only the first one is kept
+  fb.db.ref("results/" + groupKey(g.p.map(x => x.name)) + "/" + g.id)
     .transaction(cur => cur ? undefined : { w, t: Date.now() }, () => {}, false);
 }
 
-function totalsLine(s, myN, oppName){
-  const tot = s.mode === "online" && online && online.totals;
-  if (!tot || !tot.games) return "";
-  return `<div class="result-sub" style="margin-top:-10px">${esc(t("allTime"))}: ${esc(myN)} ${tot.mine} – ${tot.theirs} ${esc(oppName)}${tot.draws ? ` · ${tot.draws} ${esc(t(tot.draws === 1 ? "drawW" : "drawsW"))}` : ""}</div>`;
+function totalsLine(s){
+  const tt = totalsFor(s);
+  if (!tt) return "";
+  const draws = tt.draws ? ` · ${tt.draws} ${esc(t(tt.draws === 1 ? "drawW" : "drawsW"))}` : "";
+  const body = tt.list.length === 2
+    ? `${esc(tt.list[0].name)} ${tt.list[0].wins} – ${tt.list[1].wins} ${esc(tt.list[1].name)}`
+    : tt.list.map(x => `${esc(x.name)} ${x.wins}`).join(" · ");
+  return `<div class="result-sub" style="margin-top:-10px">${esc(t("allTime"))}: ${body}${draws}</div>`;
 }
 
 function leaveOnline(clearSession){
@@ -1061,7 +1151,8 @@ document.addEventListener("click", e => {
   else if (a === "ai") startAI();
   else if (a === "friend") openLobby();
   else if (a === "home"){ leaveOnline(true); show("home"); updateRejoin(); }
-  else if (a === "create") goOnline(genCode(), true, true);
+  else if (a === "size"){ roomSize = +b.dataset.size === 4 ? 4 : 2; store.set("size", roomSize); refreshLobbyText(); }
+  else if (a === "create") goOnline(genCode(), true, true, roomSize);
   else if (a === "rejoin"){ saveName(); const s = store.get("session"); if (s) goOnline(s.code, s.host); }
   else if (a === "leave") leaveGame();
   else if (a === "copy"){
