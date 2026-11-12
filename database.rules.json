@@ -12,6 +12,11 @@
           ".write": "auth != null && !data.exists() && root.child('rooms').child($code).child('created').val() === auth.uid",
           ".validate": "newData.isNumber() && (newData.val() === 2 || newData.val() === 4)"
         },
+        "target": {
+          ".read": "auth != null",
+          ".write": "auth != null && !data.exists() && root.child('rooms').child($code).child('created').val() === auth.uid",
+          ".validate": "newData.isNumber() && (newData.val() === 11 || newData.val() === 21)"
+        },
         "seats": {
           ".read": "auth != null",
           "$seat": {
@@ -36,6 +41,15 @@
           }
         },
         "$other": { ".validate": false }
+      }
+    },
+    "matches": {
+      "$group": {
+        ".read": "auth != null",
+        "$matchId": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['w', 't']) && newData.child('w').isString() && newData.child('w').val().length > 0 && newData.child('w').val().length <= 16 && newData.child('t').isNumber()"
+        }
       }
     },
     "results": {

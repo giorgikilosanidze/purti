@@ -191,7 +191,9 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 @media (hover:hover){.hand.can .card:hover{transform:translateY(-8px)}}
 .hand .card.sel{transform:translateY(-16px)!important;box-shadow:0 0 0 3px var(--gold),0 14px 26px rgba(0,0,0,.5)}
 .hand:not(.can) .card{filter:saturate(.85) brightness(.92)}
-.table-cards .card.will{transform:translateY(-5px);box-shadow:0 0 0 3px var(--gold),0 0 22px rgba(226,188,106,.7)}
+.table-cards.can .card{cursor:pointer}
+.table-cards .card.picked{transform:translateY(-7px);box-shadow:0 0 0 3px var(--gold),0 0 22px rgba(226,188,106,.7)}
+.status.err{color:#ffb3a8}
 .card.taking{box-shadow:0 0 0 3px var(--gold),0 0 26px rgba(226,188,106,.85)!important;transform:translateY(-5px) scale(1.04)}
 .card.gone-down{transform:translateY(200px) scale(.5) rotate(8deg)!important;opacity:0;transition:transform .4s ease-in, opacity .4s ease-in}
 .card.gone-up{transform:translateY(-200px) scale(.5) rotate(-8deg)!important;opacity:0;transition:transform .4s ease-in, opacity .4s ease-in}
@@ -236,6 +238,9 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 .rtable .pt{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:10px;font-size:12px;font-weight:800;background:rgba(226,188,106,.18);color:var(--gold);border:1px solid rgba(226,188,106,.4)}
 .rtable tr.total td{font-weight:800;font-size:18px;border-bottom:0;border-top:1px solid rgba(226,188,106,.4)}
 .rtable tr.total td.win{color:var(--gold);font-size:22px}
+.rtable tr.total.match td{border-top:0;font-size:15px;color:var(--muted)}
+.rtable tr.total.match td.win{color:var(--gold);font-size:22px}
+.target-row{width:100%;margin:0 0 16px}
 .rtable .red,.chip b.red{color:#ff8f8f}
 .btn-row{display:flex;gap:10px}
 
@@ -262,6 +267,9 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
     <div class="field">
       <label for="nameInput" data-i="yourName"></label>
       <input id="nameInput" class="input" maxlength="16" autocomplete="off">
+    </div>
+    <div class="size-row target-row"><span data-i="playTo"></span>
+      <div class="size-pick target-pick" role="group"><button type="button" data-act="target" data-target="11">11</button><button type="button" data-act="target" data-target="21">21</button></div>
     </div>
     <div class="stack">
       <button class="btn primary" data-act="friend"><span>👥</span><span data-i="playFriend"></span></button>
@@ -368,24 +376,28 @@ const T = {
     yourTurn:"Your turn", theirTurn:"{n} is playing…", aiThinking:"Computer is thinking…",
     computer:"Computer",
     tapAgain:"Tap it again to play it",
+    pickOrPlace:"Tap table cards to take them, or tap your card again to put it down",
+    tapAgainTake:"Tap your card again to take them", pickHand:"Now tap the card you want to play",
+    badTake:"Those can’t be taken with this card. Pick again, or pick nothing to put it down.",
+    playTo:"Play to", toTarget:"to {g}", matchLine:"Match to {g}: {m}", ptMatch:"Match total",
+    winMatch:"You win the match!", loseMatch:"{n} wins the match", nextRound:"Next round", newMatch:"New match",
     cards:"<b>{n}</b> cards",
     round:"Round {n}", vs:"vs {n}",
-    win:"You win!", lose:"{n} wins", draw:"It’s a draw!",
-    resultSub:"Round {r} · Match {m}",
+    win:"You win the round!", lose:"{n} wins the round", draw:"The round is a draw",
     ptMost:"Most cards", ptClubs:"Most clubs", ptTotal:"Points",
     cardTie:"Most cards was a tie, so nobody got those 2 points.",
     clubTie:"Most clubs was a tie, so nobody got that point.",
-    playAgain:"Play again", menu:"Menu", close:"Got it", offline:"offline",
+    menu:"Menu", close:"Got it", offline:"offline",
     waitingRematch:"Waiting for a new round…",
     rulesTitle:"How to play",
     rules:[
       "Two players, a normal 52-card deck. Each player gets <b>4 cards</b> and <b>4 go face-up</b> on the table. When both hands are empty, everyone gets 4 more until the deck runs out.",
-      "Play one card per turn. A number card (<b>Ace = 1</b>) takes table cards that add up to <b>11</b> together with it: A+10, 5+6, 2+2+7…",
-      "<b>King takes a King</b>, <b>Queen takes a Queen</b>.",
+      "Play one card per turn. A number card (<b>Ace = 1</b>) can take table cards that add up to <b>11</b> together with it: A+10, 5+6, 2+2+7… <b>You choose what to take</b>: tap the table cards, then tap your card again. One group per turn. Pick nothing and your card just goes on the table.",
+      "<b>King takes a King</b>, <b>Queen takes a Queen</b> (you pick which one).",
       "The <b>Jack is the ფურთი</b>: it takes every card on the table except Queens and Kings.",
       "If your card takes nothing, it stays on the table.",
       "At the end, cards left on the table go to whoever took last. Then count <b>points</b> (5 in all): <b>most cards 2</b> (nobody if it’s 26–26), <b>2♣ 1</b>, <b>10♦ 1</b>, <b>most clubs 1</b>. <b>Most points wins.</b>",
-      "Tap a card to pick it, tap it again to play it."
+      "Points add up from round to round. The first to reach <b>11</b> (or <b>21</b>) wins the match. If more than one gets there in the same round, the highest total wins; a tie at the top plays one more round."
     ]
   },
   ka:{
@@ -410,24 +422,28 @@ const T = {
     yourTurn:"შენი სვლაა", theirTurn:"სვლა: {n}…", aiThinking:"კომპიუტერი ფიქრობს…",
     computer:"კომპიუტერი",
     tapAgain:"შეეხე ისევ, რომ ჩამოხვიდე",
+    pickOrPlace:"შეეხე მაგიდის კარტებს, რომ აიღო, ან ისევ შეეხე შენს კარტს, რომ უბრალოდ დადო",
+    tapAgainTake:"ისევ შეეხე შენს კარტს, რომ აიღო", pickHand:"ახლა შეეხე კარტს, რომლითაც ჩამოხვალ",
+    badTake:"ამ კარტით ამათ ვერ აიღებ. აირჩიე თავიდან, ან არაფერი, რომ უბრალოდ დადო.",
+    playTo:"რამდენ ქულამდე?", toTarget:"{g} ქულამდე", matchLine:"თამაში {g} ქულამდე: {m}", ptMatch:"ჯამი",
+    winMatch:"შენ მოიგე თამაში!", loseMatch:"თამაში მოიგო: {n}", nextRound:"შემდეგი რაუნდი", newMatch:"ახალი თამაში",
     cards:"<b>{n}</b> კარტი",
     round:"რაუნდი {n}", vs:"vs {n}",
-    win:"მოიგე!", lose:"მოიგო: {n}", draw:"ფრეა!",
-    resultSub:"რაუნდი {r} · ანგარიში {m}",
+    win:"რაუნდი მოიგე!", lose:"რაუნდი მოიგო: {n}", draw:"რაუნდი ფრედ დასრულდა",
     ptMost:"მეტი კარტი", ptClubs:"მეტი ჯვარი", ptTotal:"ქულები",
     cardTie:"მეტი კარტი რამდენიმე მოთამაშეს თანაბრად ჰქონდა, ამიტომ 2 ქულა არავის ერგო.",
     clubTie:"მეტი ჯვარი რამდენიმე მოთამაშეს თანაბრად ჰქონდა, ამიტომ ეს ქულა არავის ერგო.",
-    playAgain:"კიდევ ერთხელ", menu:"მენიუ", close:"გასაგებია", offline:"გავიდა",
+    menu:"მენიუ", close:"გასაგებია", offline:"გავიდა",
     waitingRematch:"ველოდებით ახალ რაუნდს…",
     rulesTitle:"როგორ ვითამაშოთ",
     rules:[
       "ორი მოთამაშე, ჩვეულებრივი 52-კარტიანი დასტა. თითოეულს ურიგდება <b>4 კარტი</b> და <b>4 იშლება</b> მაგიდაზე. როცა ორივეს ხელი დაუცარიელდება, ისევ 4-4 რიგდება, სანამ დასტა არ გათავდება.",
-      "ყოველ სვლაზე ჩამოდიხარ ერთ კარტს. რიცხვიან კარტს (<b>ტუზი = 1</b>) მიჰყავს მაგიდის კარტები, რომლებიც მასთან ერთად <b>11</b>-ს შეადგენს: ტუზი+10, 5+6, 2+2+7…",
-      "<b>კაროლს მიჰყავს კაროლი</b>, <b>დამას — დამა</b>.",
+      "ყოველ სვლაზე ჩამოდიხარ ერთ კარტს. რიცხვიან კარტს (<b>ტუზი = 1</b>) შეუძლია აიღოს მაგიდის კარტები, რომლებიც მასთან ერთად <b>11</b>-ს შეადგენს: ტუზი+10, 5+6, 2+2+7… <b>რას აიღებ, შენ ირჩევ</b>: შეეხე მაგიდის კარტებს, მერე ისევ შენს კარტს. ერთ სვლაზე ერთი ჯგუფი. თუ არაფერს აირჩევ, კარტი უბრალოდ მაგიდაზე დაიდება.",
+      "<b>კაროლს მიჰყავს კაროლი</b>, <b>დამას — დამა</b> (რომელს, შენ ირჩევ).",
       "<b>ვალეტი არის ფურთი</b>: მიჰყავს მაგიდაზე ყველაფერი, დამისა და კაროლის გარდა.",
       "თუ კარტმა ვერაფერი აიღო, მაგიდაზე რჩება.",
       "ბოლოს მაგიდაზე დარჩენილი კარტები მიაქვს მას, ვინც ბოლოს აიღო. შემდეგ ითვლება <b>ქულები</b> (სულ 5): <b>მეტი კარტი — 2</b> (26–26-ზე არავის), <b>ჯვრის ორიანი (2♣) — 1</b>, <b>აგურის ათიანი (10♦) — 1</b>, <b>მეტი ჯვარი — 1</b>. <b>იგებს ვისაც მეტი ქულა აქვს.</b>",
-      "შეეხე კარტს, რომ აირჩიო, და ისევ შეეხე, რომ ჩამოხვიდე."
+      "ქულები რაუნდიდან რაუნდამდე გროვდება. ვინც პირველი მიაღწევს <b>11</b>-ს (ან <b>21</b>-ს), ის იგებს თამაშს. თუ ერთსა და იმავე რაუნდში რამდენიმემ მიაღწია, იგებს ვისაც მეტი აქვს; თანაბრობისას კიდევ ერთი რაუნდი თამაშდება."
     ]
   },
   fr:{
@@ -452,24 +468,28 @@ const T = {
     yourTurn:"À toi de jouer", theirTurn:"{n} joue…", aiThinking:"L’ordinateur réfléchit…",
     computer:"Ordinateur",
     tapAgain:"Appuie encore pour la jouer",
+    pickOrPlace:"Appuie sur les cartes de la table à prendre, ou encore sur ta carte pour la poser",
+    tapAgainTake:"Appuie encore sur ta carte pour les prendre", pickHand:"Appuie maintenant sur la carte à jouer",
+    badTake:"Ces cartes ne se prennent pas avec celle-ci. Choisis à nouveau, ou rien pour la poser.",
+    playTo:"Partie en", toTarget:"en {g}", matchLine:"Partie en {g}\u00a0: {m}", ptMatch:"Total",
+    winMatch:"Tu gagnes la partie\u00a0!", loseMatch:"{n} gagne la partie", nextRound:"Manche suivante", newMatch:"Nouvelle partie",
     cards:"<b>{n}</b> cartes",
     round:"Manche {n}", vs:"contre {n}",
-    win:"Tu as gagné !", lose:"{n} gagne", draw:"Match nul !",
-    resultSub:"Manche {r} · Score {m}",
+    win:"Tu gagnes la manche\u00a0!", lose:"{n} gagne la manche", draw:"Manche nulle",
     ptMost:"Plus de cartes", ptClubs:"Plus de trèfles", ptTotal:"Points",
     cardTie:"Égalité pour le plus de cartes : personne ne marque ces 2 points.",
     clubTie:"Égalité pour le plus de trèfles : personne ne marque ce point.",
-    playAgain:"Rejouer", menu:"Menu", close:"Compris", offline:"hors ligne",
+    menu:"Menu", close:"Compris", offline:"hors ligne",
     waitingRematch:"En attente d’une nouvelle manche…",
     rulesTitle:"Comment jouer",
     rules:[
       "Deux joueurs, un jeu normal de 52 cartes. Chaque joueur reçoit <b>4 cartes</b> et <b>4 cartes sont posées face visible</b> sur la table. Quand les deux mains sont vides, chacun en reçoit 4 de plus, jusqu’à la fin du paquet.",
-      "Joue une carte par tour. Une carte numérotée (<b>As = 1</b>) prend les cartes de la table qui font <b>11</b> avec elle : A+10, 5+6, 2+2+7…",
-      "<b>Le Roi (K) prend un Roi</b>, <b>la Dame (Q) prend une Dame</b>.",
+      "Joue une carte par tour. Une carte numérotée (<b>As = 1</b>) peut prendre les cartes de la table qui font <b>11</b> avec elle\u00a0: A+10, 5+6, 2+2+7… <b>C’est toi qui choisis</b>\u00a0: appuie sur les cartes de la table, puis encore sur ta carte. Un seul groupe par tour. Si tu ne choisis rien, ta carte est simplement posée.",
+      "<b>Le Roi (K) prend un Roi</b>, <b>la Dame (Q) prend une Dame</b> (tu choisis laquelle).",
       "<b>Le Valet (J) est le ფურთი</b> : il ramasse toutes les cartes de la table sauf les Dames et les Rois.",
       "Si ta carte ne prend rien, elle reste sur la table.",
       "À la fin, les cartes restantes sur la table vont à celui qui a pris en dernier. On compte alors les <b>points</b> (5 en tout) : <b>le plus de cartes 2</b> (personne en cas de 26–26), <b>le 2♣ 1</b>, <b>le 10♦ 1</b>, <b>le plus de trèfles 1</b>. <b>Le plus de points gagne.</b>",
-      "Appuie sur une carte pour la choisir, puis appuie encore pour la jouer."
+      "Les points s’additionnent de manche en manche. Le premier à atteindre <b>11</b> (ou <b>21</b>) gagne la partie. Si plusieurs y arrivent dans la même manche, le plus haut total gagne\u00a0; en cas d’égalité en tête, on joue une manche de plus."
     ]
   }
 };
@@ -493,6 +513,7 @@ function applyLang(){
   const langHTML = LANGS.map(([code, label]) =>
     `<button type="button" data-act="lang" data-lang="${code}" lang="${code}" class="${code === lang ? "on" : ""}" aria-pressed="${code === lang}">${label}</button>`).join("");
   document.querySelectorAll(".lang-switch").forEach(b => { b.innerHTML = langHTML; });
+  refreshTargetPick();
   document.querySelectorAll("[data-i]").forEach(el => { el.textContent = t(el.dataset.i); });
   const ni = $("nameInput"); ni.placeholder = t("defName");
   $("codeInput").placeholder = "ABCD";
@@ -515,18 +536,34 @@ function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=rnd(i+1); [a[i],a[j]
 const rid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-3);
 const clone = o => JSON.parse(JSON.stringify(o));
 
-function captureFor(card, table){
+// every group this card may take from the table (the player picks one, or none):
+// a number card: any set of number cards making 11 with it; K/Q: one card of the same rank;
+// the Jack: everything except Q and K (no choice, it always takes that)
+function captureOptions(card, table){
   const r = rank(card);
-  if (r === "J") return table.filter(c => rank(c) !== "Q" && rank(c) !== "K");
-  if (r === "Q" || r === "K"){ const m = table.find(c => rank(c) === r); return m ? [m] : []; }
+  if (r === "J"){ const all = table.filter(c => rank(c) !== "Q" && rank(c) !== "K"); return all.length ? [all] : []; }
+  if (r === "Q" || r === "K") return table.filter(c => rank(c) === r).map(c => [c]);
   const target = 11 - val(r);
   const nums = table.filter(c => val(rank(c)) !== null).slice(0, 16);
-  let best = [];
+  const out = [];
   for (let mask = 1; mask < (1 << nums.length); mask++){
-    let sum = 0, pick = [];
-    for (let i = 0; i < nums.length; i++) if (mask & (1 << i)){ sum += val(rank(nums[i])); pick.push(nums[i]); if (sum > target) break; }
-    if (sum === target && pick.length > best.length) best = pick;
+    let sum = 0; const pick = [];
+    for (let i = 0; i < nums.length; i++) if (mask & (1 << i)){ sum += val(rank(nums[i])); pick.push(nums[i]); }
+    if (sum === target) out.push(pick);
   }
+  return out;
+}
+const sameSet = (a, b) => a.length === b.length && a.every(c => b.includes(c));
+// is "take" a group this card may take? (an empty pick is always allowed: the card is just put down)
+function validTake(card, take, table){
+  if (!take.length) return true;
+  if (new Set(take).size !== take.length || !take.every(c => table.includes(c))) return false;
+  return captureOptions(card, table).some(o => sameSet(o, take));
+}
+// the most valuable group a card could take (used by the computer to judge risk)
+function captureFor(card, table){
+  let best = [];
+  for (const o of captureOptions(card, table)) if (worth(o) > worth(best)) best = o;
   return best;
 }
 
@@ -537,18 +574,24 @@ function deal(s){
 }
 const zeros = n => Array(n).fill(0);
 
-const STATE_V = 2;   // bump when the saved game format changes; older saved games are replaced
-function newRound(mode, players, prev){
+const STATE_V = 3;   // bump when the saved game format changes; older saved games are replaced
+// a new round; it continues the match of "prev" unless that match is finished (then a new match starts)
+function newRound(mode, players, prev, target){
   const deck = [];
   for (const su of "SHDC") for (const r of RANKS) deck.push(r + su);
   shuffle(deck);
   const table = [];
   while (table.length < 4){ const c = deck.pop(); if (rank(c) === "J") deck.unshift(c); else table.push(c); }
   const n = players.length;
+  const cont = prev && !prev.mover;                      // same match, next round
   const starter = prev ? (prev.starter + 1) % n : 0;   // the first player moves round by round
   const s = { v:STATE_V, id:rid(), seq:(prev ? prev.seq + 1 : 1), mode, p:players, deck, table, h:players.map(() => []),
     cap:zeros(n), cl:zeros(n), c2:-1, d10:-1, last:-1, turn:starter, starter, over:false, res:null,
-    wins: prev ? prev.wins.slice() : zeros(n), round: prev ? prev.round + 1 : 1, lm:null, mn:0 };
+    match: cont ? prev.match : rid(),                    // id of this match (its result is saved once under it)
+    target: cont ? prev.target : (target || (prev && prev.target) || 11),
+    tot: cont ? prev.tot.slice() : zeros(n),             // match points so far
+    mover:false, mw:-1,                                  // match over? match winner
+    round: cont ? prev.round + 1 : 1, lm:null, mn:0 };
   deal(s);
   return s;
 }
@@ -581,13 +624,20 @@ function scoreRound(s){
   return { w: lead(pts), pts, most, clubs };
 }
 
-function applyMove(s0, pi, card){
+// player pi plays "card" and takes "take" (cards they picked on the table; [] = take nothing).
+// Returns the new state, or null if the move isn't allowed.
+function applyMove(s0, pi, card, take){
   const s = clone(s0);
   const hi = s.h[pi].indexOf(card);
   if (hi < 0 || s.turn !== pi || s.over) return null;
+  let took;
+  if (rank(card) === "J") took = (captureOptions(card, s.table)[0] || []);   // the Jack always takes its haul
+  else {
+    took = (take || []).slice();
+    if (!validTake(card, took, s.table)) return null;
+  }
   s.h[pi].splice(hi, 1);
   const tb = s.table.slice();
-  const took = captureFor(card, s.table);
   if (took.length){
     s.table = s.table.filter(c => !took.includes(c));
     collect(s, pi, took.concat([card]));
@@ -603,7 +653,9 @@ function applyMove(s0, pi, card){
       s.table = [];
       s.over = true;
       s.res = scoreRound(s);
-      if (s.res.w >= 0) s.wins[s.res.w]++;
+      s.res.pts.forEach((p, i) => { s.tot[i] += p; });
+      // the match ends once someone reaches the target and is alone on top; a tie on top plays another round
+      if (Math.max(...s.tot) >= s.target && lead(s.tot) >= 0){ s.mover = true; s.mw = lead(s.tot); }
     }
   }
   s.seq++;
@@ -614,25 +666,25 @@ function applyMove(s0, pi, card){
 const cardWorth = c => 10 + (suit(c) === "C" ? 6 : 0) + (c === "2C" || c === "10D" ? 45 : 0);
 const worth = cards => cards.reduce((n, c) => n + cardWorth(c), 0);
 
+// the computer's move: { card, take }
 function aiChoose(s, pi){
   const hand = s.h[pi];
   let best = null, bestScore = -Infinity;
+  const consider = (card, take, score) => { score += Math.random() * 1.5; if (score > bestScore){ bestScore = score; best = { card, take }; } };
   for (const c of hand){
-    const took = captureFor(c, s.table);
-    let score;
-    if (took.length){
-      score = worth(took) + cardWorth(c);
+    const opts = captureOptions(c, s.table);
+    for (const took of opts){
+      let score = worth(took) + cardWorth(c);
       // save the Jack for a bigger haul unless it's the last card or it grabs a point card
       if (rank(c) === "J" && took.length < 3 && hand.length > 1 && !took.some(x => x === "2C" || x === "10D")) score -= 25;
-    } else {
-      // put down the card that hands the opponent the least
-      const nt = s.table.concat([c]);
-      let risk = 0;
-      for (const r of RANKS) risk = Math.max(risk, worth(captureFor(r + "S", nt)));
-      score = -risk * 0.5 - cardWorth(c) - (rank(c) === "J" ? 40 : 0);
+      consider(c, took, score);
     }
-    score += Math.random() * 1.5;
-    if (score > bestScore){ bestScore = score; best = c; }
+    if (rank(c) === "J" && opts.length) continue;      // a Jack can't be put down without taking
+    // put down the card that hands the next player the least
+    const nt = s.table.concat([c]);
+    let risk = 0;
+    for (const r of RANKS) risk = Math.max(risk, worth(captureFor(r + "S", nt)));
+    consider(c, [], -risk * 0.5 - cardWorth(c) - (rank(c) === "J" ? 40 : 0));
   }
   return best;
 }
@@ -644,7 +696,8 @@ function validState(g){
     if (!Array.isArray(g.cap) || !Array.isArray(g.cl) || typeof g.c2 !== "number" || typeof g.d10 !== "number") return false;
     if (!Array.isArray(g.p) || ![2,4].includes(g.p.length)) return false;
     const n = g.p.length;
-    if (!Array.isArray(g.h) || g.h.length !== n || g.cap.length !== n || g.cl.length !== n || !Array.isArray(g.wins) || g.wins.length !== n) return false;
+    if (!Array.isArray(g.h) || g.h.length !== n || g.cap.length !== n || g.cl.length !== n || !Array.isArray(g.tot) || g.tot.length !== n) return false;
+    if (![11, 21].includes(g.target) || typeof g.match !== "string" || typeof g.mover !== "boolean") return false;
     const all = [].concat(g.deck, g.table, ...g.h);
     if (!all.every(c => typeof c === "string" && CARD_RE.test(c))) return false;
     if (g.lm && ![g.lm.c].concat(g.lm.tb, g.lm.t).every(c => typeof c === "string" && CARD_RE.test(c))) return false;
@@ -670,7 +723,9 @@ let state = null;          // current game state
 let me = { cid: store.get("cid"), name: store.get("name") || "" };
 if (!me.cid){ me.cid = rid(); store.set("cid", me.cid); }
 let mi = 0;                // my player index
-let sel = null;
+let sel = null;            // the hand card I've picked
+let picks = new Set();     // the table cards I've picked to take
+let takeErr = false;       // my last pick couldn't be taken with that card
 let busy = false, pendingRender = false;
 let shownLm = null;
 let aiTimer = null;
@@ -715,10 +770,11 @@ function renderState(s, anim){
   }).join("");
 
   const tt = totalsFor(s);
-  $("subline").textContent = t("round", {n:s.round})
+  $("subline").textContent = t("round", {n:s.round}) + " · " + t("toTarget", {g:s.target})
     + (others.length === 1 ? " · " + t("vs", {n:playerName(s, others[0])}) : "")
     + (tt ? ` · ${t("allTime")} ${tt.list.map(x => x.wins).join("–")}` : "");
-  $("matchScore").textContent = seatOrder(s).map(i => s.wins[i]).join("–");
+  // match points so far, mine first
+  $("matchScore").textContent = seatOrder(s).map(i => s.tot[i]).join("–");
 
   // table
   const tbl = $("table");
@@ -728,8 +784,9 @@ function renderState(s, anim){
     tbl.innerHTML = cards.map(c => cardHTML(c, c === lm.c ? (lm.by === mi ? "in-me" : "in-opp") : "")).join("");
     if (lm.t.length) lm.t.concat([lm.c]).forEach(c => { const el = tbl.querySelector(`[data-id="${c}"]`); if (el) el.classList.add("taking"); });
   } else {
-    tbl.innerHTML = s.table.length ? s.table.map(c => cardHTML(c)).join("") : `<div class="table-empty">—</div>`;
+    tbl.innerHTML = s.table.length ? s.table.map(c => cardHTML(c, picks.has(c) ? "picked" : "")).join("") : `<div class="table-empty">—</div>`;
   }
+  tbl.classList.toggle("can", canPlay() && !anim);
 
   // my hand
   const mh = $("myHand");
@@ -748,9 +805,13 @@ function renderState(s, anim){
   $("myZone").classList.toggle("active", myTurn && !anim);
   const st = $("status");
   st.classList.toggle("mine", myTurn);
+  st.classList.toggle("err", myTurn && takeErr);
   if (anim || s.over) st.textContent = "";
   else if (myTurn){
-    st.textContent = sel ? t("tapAgain") : t("yourTurn");
+    st.textContent = takeErr ? t("badTake")
+      : sel && rank(sel) === "J" ? t("tapAgain")                       // the Jack takes on its own
+      : sel ? (picks.size ? t("tapAgainTake") : t("pickOrPlace"))
+      : picks.size ? t("pickHand") : t("yourTurn");
   } else st.textContent = s.mode === "ai" ? t("aiThinking") : t("theirTurn", {n:playerName(s, s.turn)});
 }
 
@@ -769,13 +830,13 @@ function setState(ns){
   state = ns;
   if (busy){ pendingRender = true; return; }
   const sameGame = prev && prev.id === ns.id;
-  if (!sameGame){ sel = null; shownLm = ns.lm ? ns.lm.n : null; seenHand = new Set(); closeModal(); }
+  if (!sameGame){ sel = null; picks = new Set(); takeErr = false; shownLm = ns.lm ? ns.lm.n : null; seenHand = new Set(); closeModal(); }
   if (ns.lm && ns.lm.n !== shownLm && sameGame) runAnim(ns.lm);
   else { renderFinal(); afterRender(); }
 }
 
 function runAnim(lm){
-  busy = true; sel = null; shownLm = lm.n;
+  busy = true; sel = null; picks = new Set(); takeErr = false; shownLm = lm.n;
   renderState(state, lm);
   const tbl = $("table");
   const dir = lm.by === mi ? "gone-down" : "gone-up";
@@ -799,23 +860,38 @@ function afterRender(){
       aiTimer = null;
       if (!state || state.mode !== "ai" || state.turn !== 1 || state.over) return;
       if (busy){ afterRender(); return; }
-      const c = aiChoose(state, 1);
-      const ns = applyMove(state, 1, c);
+      const mv = aiChoose(state, 1);
+      const ns = applyMove(state, 1, mv.card, mv.take);
       if (ns) setState(ns);
     }, 750 + Math.random() * 500);
   }
 }
 
 /* hand interaction */
+// my turn: tap table cards to pick what to take (tap again to unpick), tap a hand card to pick it,
+// tap that hand card again to play it with the picked table cards (none picked = just put it down)
 $("myHand").addEventListener("click", e => {
   const el = e.target.closest(".card"); if (!el || !canPlay()) return;
   const id = el.dataset.id;
-  if (sel === id){ sel = null; const ns = applyMove(state, mi, id); if (ns) commit(ns); }
-  else { sel = id; renderFinal(); }
+  takeErr = false;
+  if (sel === id){
+    const take = [...picks].filter(c => state.table.includes(c));
+    const ns = applyMove(state, mi, id, take);
+    if (ns){ sel = null; picks = new Set(); commit(ns); }
+    else { takeErr = true; renderFinal(); }                         // that group can't be taken with this card
+  } else { sel = id; renderFinal(); }
+  e.stopPropagation();
+});
+$("table").addEventListener("click", e => {
+  const el = e.target.closest(".card"); if (!el || !canPlay()) return;
+  const id = el.dataset.id;
+  takeErr = false;
+  if (picks.has(id)) picks.delete(id); else picks.add(id);
+  renderFinal();
   e.stopPropagation();
 });
 $("game").addEventListener("click", e => {
-  if (sel && !e.target.closest(".card") && !e.target.closest("button")){ sel = null; renderFinal(); }
+  if ((sel || picks.size) && !e.target.closest(".card") && !e.target.closest("button")){ sel = null; picks = new Set(); takeErr = false; renderFinal(); }
 });
 
 /* ================= modals ================= */
@@ -836,8 +912,12 @@ function showResult(){
   openModal = showResult;
   const cols = seatOrder(s);                    // me first, then the others in playing order
   const w = s.res.w;
-  const title = w < 0 ? t("draw") : (w === mi ? t("win") : t("lose", {n:esc(playerName(s, w))}));
   const r = s.res;
+  const done = s.mover;                         // this round ended the match
+  const title = done
+    ? (s.mw === mi ? t("winMatch") : t("loseMatch", {n:esc(playerName(s, s.mw))}))
+    : (w < 0 ? t("draw") : (w === mi ? t("win") : t("lose", {n:esc(playerName(s, w))})));
+  const icon = done ? (s.mw === mi ? "🏆" : "🃏") : (w === mi ? "⭐" : (w < 0 ? "🤝" : "🃏"));
   // one cell: what the player has, plus the points it earned
   const cell = (shown, pts) => `<td class="${pts ? "got" : ""}">${shown}${pts ? ` <span class="pt">+${pts}</span>` : ""}</td>`;
   const owns = (who, i, p) => cell(who === i ? "✓" : "—", who === i ? p : 0);
@@ -847,18 +927,20 @@ function showResult(){
     line("2♣", i => owns(s.c2, i, 1)) +
     line(`<span class="red">10♦</span>`, i => owns(s.d10, i, 1)) +
     line(esc(t("ptClubs")), i => cell(s.cl[i], r.clubs === i ? 1 : 0)) +
-    `<tr class="total"><td>${esc(t("ptTotal"))}</td>${cols.map(i => `<td class="${w === i ? "win" : ""}">${r.pts[i]}</td>`).join("")}</tr>`;
+    `<tr class="total"><td>${esc(t("ptTotal"))}</td>${cols.map(i => `<td class="${w === i ? "win" : ""}">${r.pts[i]}</td>`).join("")}</tr>` +
+    // running match total, the winner of the match in gold
+    `<tr class="total match"><td>${esc(t("ptMatch"))}</td>${cols.map(i => `<td class="${done && s.mw === i ? "win" : ""}">${s.tot[i]}</td>`).join("")}</tr>`;
   const ties = (r.most < 0 ? [t("cardTie")] : []).concat(r.clubs < 0 ? [t("clubTie")] : []);
-  modal(`<div style="text-align:center;font-size:40px">${w === mi ? "🏆" : (w < 0 ? "🤝" : "🃏")}</div>
+  modal(`<div style="text-align:center;font-size:40px">${icon}</div>
     <div class="result-title">${title}</div>
-    <div class="result-sub">${esc(t("resultSub", {r:s.round, m:cols.map(i => s.wins[i]).join("–")}))}</div>
+    <div class="result-sub">${esc(t("round", {n:s.round}))} · ${esc(t("matchLine", {g:s.target, m:cols.map(i => s.tot[i]).join("–")}))}</div>
     ${totalsLine(s)}
     <table class="rtable ${cols.length > 2 ? "four" : ""}"><tr><th></th>${cols.map(i => `<th><span class="nm">${esc(playerName(s, i))}</span></th>`).join("")}</tr>${rows}</table>
     ${ties.map(x => `<p class="note" style="margin:0 0 6px">${esc(x)}</p>`).join("")}
-    <div class="btn-row"><button class="btn ghost" data-x="menu">${esc(t("menu"))}</button><button class="btn primary" data-x="again">${esc(t("playAgain"))}</button></div>`,
+    <div class="btn-row"><button class="btn ghost" data-x="menu">${esc(t("menu"))}</button><button class="btn primary" data-x="again">${esc(t(done ? "newMatch" : "nextRound"))}</button></div>`,
     root => {
-      // the round is over, so there's nothing to rejoin: forget the room
-      root.querySelector("[data-x=menu]").onclick = () => { closeModal(); leaveGame(true); };
+      // after the match is over there's nothing to rejoin, so forget the room; between rounds keep it
+      root.querySelector("[data-x=menu]").onclick = () => { closeModal(); leaveGame(done); };
       root.querySelector("[data-x=again]").onclick = () => { closeModal(); commit(newRound(state.mode, state.p, state)); };
     });
 }
@@ -869,18 +951,25 @@ function startAI(){
   if (online) leaveOnline(false);
   mi = 0; state = null;
   show("game");
-  setState(newRound("ai", [{cid:me.cid, name:myName()}, {cid:"ai", name:"AI"}], null));
+  setState(newRound("ai", [{cid:me.cid, name:myName()}, {cid:"ai", name:"AI"}], null, matchTarget));
+}
+
+let matchTarget = store.get("target") === 21 ? 21 : 11;   // points to win a match, for practice and rooms I create
+function refreshTargetPick(){
+  document.querySelectorAll(".target-pick button").forEach(b => b.classList.toggle("on", +b.dataset.target === matchTarget));
 }
 
 /* ================= online (Firebase Realtime Database) =================
    rooms/<CODE>/created  uid of the player who made the room (seat 0)
    rooms/<CODE>/size     2 or 4 (missing = 2)
+   rooms/<CODE>/target   points to win the match: 11 or 21 (missing = 11)
    rooms/<CODE>/seats    { 1: uid, 2: uid, 3: uid } — the other seats, claimed in order of joining
    rooms/<CODE>/players  { uid: name }
    rooms/<CODE>/state    the whole game as a JSON string (the one true copy)
    rooms/<CODE>/online   { uid: true } while that player has the page open
-   results/<group>/<gameId> { w: winner's name (lowercase) or "" for a draw, t: time } — one entry per finished game;
-     <group> is the players' names, lowercased and sorted, so each pair or foursome has its own record */
+   matches/<group>/<matchId> { w: match winner's name (lowercase), t: time } — one entry per finished match;
+     <group> is the players' names, lowercased and sorted, so each pair or foursome has its own record.
+   (results/<group>/… holds per-round results from before matches existed; no longer read.) */
 function genCode(){ const a = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 4; i++) s += a[rnd(a.length)]; return s; }
 
 let fbReady = null, fb = null;
@@ -954,7 +1043,7 @@ async function goOnline(code, host, fresh, size){
   document.querySelector('#lobbyWait [data-i="shareCode"]').classList.toggle("hidden", !host);
   lobbyNote("");
   state = null;
-  const o = online = { code, host, size: size || 2, subs:[], players:{}, onlineMap:{}, stateLoaded:false, connected:null, totals:null, totalsKey:null, recorded:new Set(), room:null };
+  const o = online = { code, host, size: size || 2, target: matchTarget, subs:[], players:{}, onlineMap:{}, stateLoaded:false, connected:null, totals:null, totalsKey:null, recorded:new Set(), room:null };
   refreshLobbyText();
   const fail = (key) => { if (online !== o) return; leaveOnline(false); show("lobby"); lobbyChoose(); lobbyNote(t(key), true); };
 
@@ -976,12 +1065,14 @@ async function goOnline(code, host, fresh, size){
         if (online !== o) return;
       }
       await room.child("size").set(o.size);
+      await room.child("target").set(o.target);
     } else {
       // seat 0 is the creator; the others take seats 1..size-1 in the order they join
-      const [cr, sz, st, ps] = await Promise.all(["created", "size", "seats", "players"].map(k => room.child(k).once("value")));
+      const [cr, sz, tg, st, ps] = await Promise.all(["created", "size", "target", "seats", "players"].map(k => room.child(k).once("value")));
       if (online !== o) return;
       if (!cr.exists()) return fail("noHost");
       o.size = sz.val() === 4 ? 4 : 2;
+      o.target = tg.val() === 21 ? 21 : 11;
       refreshLobbyText();
       const seats = st.val() || {}, players = ps.val() || {};
       const mine = cr.val() === f.uid || Object.values(seats).includes(f.uid);
@@ -1041,7 +1132,7 @@ async function maybeStart(o){
   const order = [creator];
   for (let i = 1; i < o.size; i++) order.push(seats[i]);
   if (order.some(uid => !uid || !o.players[uid])) return;   // a seat is claimed but its name isn't saved yet
-  const ns = newRound("online", order.map(uid => ({cid:uid, name:String(o.players[uid]).slice(0,16)})), null);
+  const ns = newRound("online", order.map(uid => ({cid:uid, name:String(o.players[uid]).slice(0,16)})), null, o.target);
   enterGame(o, ns);
   commit(ns);
 }
@@ -1084,7 +1175,7 @@ function watchTotals(o, g){
   const key = groupKey(g.p.map(x => x.name));
   if (o.totalsKey === key) return;
   o.totalsKey = key;
-  watch(o, fb.db.ref("results/" + key), "value", snap => {
+  watch(o, fb.db.ref("matches/" + key), "value", snap => {
     if (online !== o || !state) return;
     const tot = { wins:{}, draws:0, games:0 };
     snap.forEach(ch => {
@@ -1105,12 +1196,13 @@ function totalsFor(s){
   return { draws: tot.draws, list: seatOrder(s).map(i => ({ name: s.p[i].name, wins: tot.wins[nameKey(s.p[i].name)] || 0 })) };
 }
 
+// save a finished match (not each round) to the group's all-time record
 function recordResult(o, g){
-  if (!g.over || !g.res || o.recorded.has(g.id) || !fb) return;
-  o.recorded.add(g.id);
-  const w = g.res.w >= 0 ? nameKey(g.p[g.res.w].name) : "";
-  // every player may try to save the same game; only the first one is kept
-  fb.db.ref("results/" + groupKey(g.p.map(x => x.name)) + "/" + g.id)
+  if (!g.mover || o.recorded.has(g.match) || !fb) return;
+  o.recorded.add(g.match);
+  const w = nameKey(g.p[g.mw].name);
+  // every player may try to save the same match; only the first one is kept
+  fb.db.ref("matches/" + groupKey(g.p.map(x => x.name)) + "/" + g.match)
     .transaction(cur => cur ? undefined : { w, t: Date.now() }, () => {}, false);
 }
 
@@ -1160,6 +1252,7 @@ document.addEventListener("click", e => {
   else if (a === "friend") openLobby();
   else if (a === "home"){ leaveOnline(true); show("home"); updateRejoin(); }
   else if (a === "forget"){ store.del("session"); updateRejoin(); }
+  else if (a === "target"){ matchTarget = +b.dataset.target === 21 ? 21 : 11; store.set("target", matchTarget); refreshTargetPick(); }
   else if (a === "size"){ roomSize = +b.dataset.size === 4 ? 4 : 2; store.set("size", roomSize); refreshLobbyText(); }
   else if (a === "create") goOnline(genCode(), true, true, roomSize);
   else if (a === "rejoin"){ saveName(); const s = store.get("session"); if (s) goOnline(s.code, s.host); }
