@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -372,7 +372,10 @@ const T = {
     needName:"Type your name first. Your friend sees it, and your all-time score is kept under it.",
     reconnecting:"reconnecting…", allTime:"All-time", drawW:"draw", drawsW:"draws",
     connErr:"Couldn’t connect. Try again in a moment.",
-    rejoin:"↩ Rejoin game {c}", forget:"Forget this game",
+    rejoin:"↩ Rejoin game {c} · {s}", forget:"Forget this game",
+    ended:"This game has ended: a player was away for more than 2 minutes.",
+    closedBy:"{n} left more than 2 minutes ago, so the game has ended.",
+    closedMe:"You were away for more than 2 minutes, so the game has ended.",
     yourTurn:"Your turn", theirTurn:"{n} is playing…", aiThinking:"Computer is thinking…",
     computer:"Computer",
     tapAgain:"Tap it again to play it",
@@ -418,7 +421,10 @@ const T = {
     needName:"ჯერ სახელი ჩაწერე. მეგობარი მას დაინახავს და საერთო ანგარიშიც ამ სახელით ინახება.",
     reconnecting:"კავშირი აღდგება…", allTime:"სულ", drawW:"ფრე", drawsW:"ფრე",
     connErr:"დაკავშირება ვერ მოხერხდა. ცოტა ხანში სცადე.",
-    rejoin:"↩ დაბრუნდი თამაშში {c}", forget:"ამ თამაშის დავიწყება",
+    rejoin:"↩ დაბრუნდი თამაშში {c} · {s}", forget:"ამ თამაშის დავიწყება",
+    ended:"ეს თამაში დასრულდა: ერთ-ერთი მოთამაშე 2 წუთზე მეტხანს არ იყო.",
+    closedBy:"{n} 2 წუთზე მეტია, რაც გავიდა, ამიტომ თამაში დასრულდა.",
+    closedMe:"2 წუთზე მეტხანს არ იყავი, ამიტომ თამაში დასრულდა.",
     yourTurn:"შენი სვლაა", theirTurn:"სვლა: {n}…", aiThinking:"კომპიუტერი ფიქრობს…",
     computer:"კომპიუტერი",
     tapAgain:"შეეხე ისევ, რომ ჩამოხვიდე",
@@ -464,7 +470,10 @@ const T = {
     needName:"Saisis d’abord ton nom. Ton ami le voit, et ton score total est enregistré sous ce nom.",
     reconnecting:"reconnexion…", allTime:"Au total", drawW:"nul", drawsW:"nuls",
     connErr:"Connexion impossible. Réessaie dans un instant.",
-    rejoin:"↩ Revenir à la partie {c}", forget:"Oublier cette partie",
+    rejoin:"↩ Revenir à la partie {c} · {s}", forget:"Oublier cette partie",
+    ended:"Cette partie est terminée : un joueur est parti depuis plus de 2 minutes.",
+    closedBy:"{n} est parti depuis plus de 2 minutes : la partie est terminée.",
+    closedMe:"Tu as été absent plus de 2 minutes : la partie est terminée.",
     yourTurn:"À toi de jouer", theirTurn:"{n} joue…", aiThinking:"L’ordinateur réfléchit…",
     computer:"Ordinateur",
     tapAgain:"Appuie encore pour la jouer",
@@ -503,7 +512,7 @@ const store = {
   del(k){ try{ localStorage.removeItem(SP+k); }catch(e){} }
 };
 let lang = store.get("lang");
-if (!T[lang]) lang = "en";
+if (!T[lang]) lang = "fr";   // French unless the player picked another language
 const t = (k, vars) => { let s = (T[lang] && T[lang][k]) ?? T.en[k] ?? k; if (vars && typeof s === "string") for (const v in vars) s = s.split("{"+v+"}").join(vars[v]); return s; };
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -761,11 +770,13 @@ function renderState(s, anim){
   opps.classList.toggle("four", others.length > 1);
   opps.innerHTML = others.map(i => {
     const nm = playerName(s, i);
-    const off = online && s.mode === "online" && online.onlineMap && !online.onlineMap[s.p[i].cid];
+    // offline: true = here; a number = the server time they left (shown as the time left before the game closes)
+    const ov = online && s.mode === "online" && online.onlineMap ? online.onlineMap[s.p[i].cid] : true;
+    const off = ov !== true;
     const active = !s.over && s.turn === i && !anim;
     return `<div class="zone opp ${active ? "active" : ""}">
       <div class="tag"><div class="avatar">${s.mode === "ai" ? "🤖" : esc(initials(nm))}</div><span class="pname">${esc(nm)}</span>
-        <span class="chips"><span class="chip">${t("cards", {n:s.cap[i]})}</span><span class="chip">${clubsChip(s, i)}</span>${off ? `<span class="chip off">${esc(t("offline"))}</span>` : ""}</span></div>
+        <span class="chips"><span class="chip">${t("cards", {n:s.cap[i]})}</span><span class="chip">${clubsChip(s, i)}</span>${off ? `<span class="chip off"${typeof ov === "number" ? ` data-gone="${ov}"` : ""}>${esc(offText(ov))}</span>` : ""}</span></div>
       <div class="opp-hand">${s.h[i].map(() => backHTML()).join("")}</div></div>`;
   }).join("");
 
@@ -847,6 +858,7 @@ function runAnim(lm){
   setTimeout(() => {
     busy = false;
     if (pendingRender){ pendingRender = false; }
+    if (!state) return;                               // left the game meanwhile
     if (state.lm && state.lm.n !== shownLm) { runAnim(state.lm); return; }
     renderFinal(); afterRender();
   }, hasTake ? 1000 : 420);
@@ -972,6 +984,18 @@ function refreshTargetPick(){
    (results/<group>/… holds per-round results from before matches existed; no longer read.) */
 function genCode(){ const a = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 4; i++) s += a[rnd(a.length)]; return s; }
 
+/* Leaving a room: a player who leaves (←, closed tab, lost connection) can rejoin for GONE_MS.
+   Their online/<uid> turns into the server time they left; once that is GONE_MS old, any player still
+   in the room writes rooms/<CODE>/closed, everyone is moved out, and nobody can join or rejoin it. */
+const GONE_MS = 2 * 60 * 1000;
+let srvOffset = 0;                                     // server clock minus my clock
+const srvNow = () => Date.now() + srvOffset;
+const TS = () => firebase.database.ServerValue.TIMESTAMP;
+const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+// time left before a player who left at server time v makes the game close
+const goneLeft = v => GONE_MS - (srvNow() - v);
+function offText(v){ return typeof v === "number" ? t("offline") + " · " + mmss(goneLeft(v)) : t("offline"); }
+
 let fbReady = null, fb = null;
 function fbInit(){
   if (fbReady) return fbReady;
@@ -985,7 +1009,11 @@ function fbInit(){
       const auth = app.auth(), db = app.database();
       let first = true;
       const un = auth.onAuthStateChanged(u => {
-        if (u){ un(); fb = { auth, db, uid:u.uid }; resolve(fb); }
+        if (u){
+          un(); fb = { auth, db, uid:u.uid };
+          db.ref(".info/serverTimeOffset").on("value", s => { srvOffset = s.val() || 0; });
+          resolve(fb);
+        }
         else if (first){ first = false; auth.signInAnonymously().catch(e => { un(); reject(e); }); }
       });
     }catch(e){ reject(e); }
@@ -1045,7 +1073,8 @@ async function goOnline(code, host, fresh, size){
   state = null;
   const o = online = { code, host, size: size || 2, target: matchTarget, subs:[], players:{}, onlineMap:{}, stateLoaded:false, connected:null, totals:null, totalsKey:null, recorded:new Set(), room:null };
   refreshLobbyText();
-  const fail = (key) => { if (online !== o) return; leaveOnline(false); show("lobby"); lobbyChoose(); lobbyNote(t(key), true); };
+  // forget = the room is gone for good, so drop "Rejoin" for it too
+  const fail = (key, forget) => { if (online !== o) return; leaveOnline(false); if (forget) forgetRoom(code); show("lobby"); lobbyChoose(); lobbyNote(t(key), true); };
 
   let f;
   try{ f = await fbInit(); }catch(e){ return fail(e && e.message === "notSetup" ? "notSetup" : "noRoom"); }
@@ -1068,14 +1097,20 @@ async function goOnline(code, host, fresh, size){
       await room.child("target").set(o.target);
     } else {
       // seat 0 is the creator; the others take seats 1..size-1 in the order they join
-      const [cr, sz, tg, st, ps] = await Promise.all(["created", "size", "target", "seats", "players"].map(k => room.child(k).once("value")));
+      const [cr, sz, tg, st, ps, on, cl] = await Promise.all(["created", "size", "target", "seats", "players", "online", "closed"].map(k => room.child(k).once("value")));
       if (online !== o) return;
       if (!cr.exists()) return fail("noHost");
       o.size = sz.val() === 4 ? 4 : 2;
       o.target = tg.val() === 21 ? 21 : 11;
       refreshLobbyText();
-      const seats = st.val() || {}, players = ps.val() || {};
+      const seats = st.val() || {}, players = ps.val() || {}, onMap = on.val() || {};
       const mine = cr.val() === f.uid || Object.values(seats).includes(f.uid);
+      // closed, or someone (me included) left more than 2 minutes ago: the room is over
+      if (cl.exists()) return fail("ended", true);
+      if (Object.keys(players).some(uid => typeof onMap[uid] === "number" && goneLeft(onMap[uid]) <= 0)){
+        if (mine && players[f.uid]) room.child("closed").set(TS()).catch(() => {});
+        return fail("ended", true);
+      }
       if (!mine){
         const taken = Object.entries(players).some(([uid, nm]) => uid !== f.uid && nameKey(nm) === nameKey(myName()));
         if (taken) return fail("nameTaken");
@@ -1092,18 +1127,28 @@ async function goOnline(code, host, fresh, size){
   }catch(e){ return fail("connErr"); }
   if (online !== o) return;
   o.room = room;
-  store.set("session", { code, host });
+  saveSession(o);
   refreshLobbyText();
 
-  // my presence: true while connected, removed by the server when I drop
+  // my presence: true while connected; when I leave or drop it becomes the server time I left
   const meOn = room.child("online/" + f.uid);
-  o.subs.push(() => { try{ meOn.onDisconnect().cancel(); meOn.remove(); }catch(e){} });
+  o.subs.push(() => { try{ meOn.onDisconnect().cancel(); meOn.set(TS()).catch(() => {}); }catch(e){} });
   watch(o, f.db.ref(".info/connected"), "value", snap => {
     if (online !== o) return;
     o.connected = !!snap.val();
-    if (o.connected){ meOn.onDisconnect().remove(); meOn.set(true).catch(() => {}); }
+    if (o.connected){
+      // back after more than 2 minutes away (e.g. the connection dropped): the game is over for me
+      meOn.once("value").then(ms => {
+        if (online !== o) return;
+        const v = ms.val();
+        if (typeof v === "number" && goneLeft(v) <= 0) return closeRoom(o, f.uid);
+        meOn.onDisconnect().set(TS()); meOn.set(true).catch(() => {});
+      }).catch(() => {});
+    }
     if (state && !busy) renderFinal();
   });
+  // someone closed the room (a player was gone too long): everyone leaves it
+  watch(o, room.child("closed"), "value", snap => { if (online === o && snap.exists()) roomClosed(o, goneUid(o)); });
   watch(o, room.child("players"), "value", snap => {
     if (online !== o) return;
     o.players = snap.val() || {};
@@ -1218,6 +1263,7 @@ function totalsLine(s){
 
 function leaveOnline(clearSession){
   if (!online) return;
+  if (online.room && !clearSession) saveSession(online);   // the 2 minutes to rejoin start now
   online.subs.forEach(fn => { try{ fn(); }catch(e){} });
   online = null;
   if (clearSession) store.del("session");
@@ -1232,10 +1278,57 @@ function leaveGame(forget){
   show("home"); updateRejoin();
 }
 
+// the room I'm in, for "Rejoin"; "at" is when I was last in it (kept fresh every second while I am)
+function saveSession(o){ store.set("session", { code:o.code, host:o.host, at:Date.now() }); }
+function forgetRoom(code){ const s = store.get("session"); if (s && s.code === code) store.del("session"); }
+
+// the player who has been gone longest (others before me), or null
+function goneUid(o){
+  const gone = Object.keys(o.players || {}).filter(u => typeof o.onlineMap[u] === "number");
+  const others = gone.filter(u => u !== fb.uid);
+  return (others.length ? others : gone).sort((a, b) => o.onlineMap[a] - o.onlineMap[b])[0] || null;
+}
+// I see someone gone more than 2 minutes: close the room for everyone
+function closeRoom(o, uid){
+  if (online !== o) return;
+  o.room.child("closed").set(TS()).catch(() => {});     // refused if it's already closed; fine
+  roomClosed(o, uid);
+}
+// move out of a closed room, back to the home screen, and say why
+function roomClosed(o, uid){
+  if (online !== o) return;
+  const msg = uid && uid === fb.uid ? t("closedMe")
+    : uid && o.players[uid] ? t("closedBy", {n:o.players[uid]}) : t("ended");
+  clearTimeout(aiTimer); aiTimer = null;
+  leaveOnline(true);
+  state = null; busy = false; sel = null; picks = new Set(); takeErr = false;
+  closeModal();
+  show("home"); updateRejoin();
+  notice(msg);
+}
+
+// every second: keep my room's "Rejoin" fresh, count down offline players, close the room when one is gone too long
+setInterval(() => {
+  const o = online;
+  if (o && o.room){
+    saveSession(o);
+    if (o.connected){
+      const uid = Object.keys(o.players || {}).find(u => u !== fb.uid && typeof o.onlineMap[u] === "number" && goneLeft(o.onlineMap[u]) <= 0);
+      if (uid) return closeRoom(o, uid);
+    }
+    document.querySelectorAll("#opps .chip.off[data-gone]").forEach(el => { el.textContent = offText(+el.dataset.gone); });
+  }
+  if (screen === "home") updateRejoin();
+}, 1000);
+window.addEventListener("pagehide", () => { if (online && online.room) saveSession(online); });
+
+// "Rejoin" shows for 2 minutes after I left the room, then it's gone for good
 function updateRejoin(){
-  const s = store.get("session");
-  $("rejoinRow").classList.toggle("hidden", !(s && s.code));
-  if (s && s.code) $("rejoinBtn").textContent = t("rejoin", {c:s.code});
+  let s = store.get("session");
+  const left = s && s.code && typeof s.at === "number" ? GONE_MS - (Date.now() - s.at) : 0;
+  if (s && left <= 0){ store.del("session"); s = null; }
+  $("rejoinRow").classList.toggle("hidden", !s);
+  if (s) $("rejoinBtn").textContent = t("rejoin", {c:s.code, s:mmss(left)});
   $("forgetBtn").setAttribute("aria-label", t("forget"));
   $("forgetBtn").title = t("forget");
 }
@@ -1255,7 +1348,7 @@ document.addEventListener("click", e => {
   else if (a === "target"){ matchTarget = +b.dataset.target === 21 ? 21 : 11; store.set("target", matchTarget); refreshTargetPick(); }
   else if (a === "size"){ roomSize = +b.dataset.size === 4 ? 4 : 2; store.set("size", roomSize); refreshLobbyText(); }
   else if (a === "create") goOnline(genCode(), true, true, roomSize);
-  else if (a === "rejoin"){ saveName(); const s = store.get("session"); if (s) goOnline(s.code, s.host); }
+  else if (a === "rejoin"){ saveName(); updateRejoin(); const s = store.get("session"); if (s) goOnline(s.code, s.host); }
   else if (a === "leave") leaveGame();
   else if (a === "copy"){
     const code = online && online.code;

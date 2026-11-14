@@ -3,10 +3,10 @@
 The Georgian card game of elevens, as a small web app. Play online with 1 or 3 friends using a 4-letter code (2- or 4-player games), or practise against the computer.
 
 - One file: `index.html` (no build step).
-- Online play goes through [Firebase Realtime Database](https://firebase.google.com/docs/database). The game lives on the server, so a refresh, a dropped connection or a closed tab doesn't lose it: open the page again and tap "Rejoin".
+- Online play goes through [Firebase Realtime Database](https://firebase.google.com/docs/database). The game lives on the server, so a refresh, a dropped connection or a closed tab doesn't lose it: open the page again and tap "Rejoin" within 2 minutes. After 2 minutes away the game is closed: the other players are sent back to the home screen and nobody can rejoin it.
 - Games are matches to 11 or 21 points (you pick on the home screen; joiners get the room's choice).
 - All-time match wins are saved for each group of players (a pair or a foursome) and shown during the game and after each round. They're kept under your names, so use the same names every time; two players in one game can't share a name.
-- Works on phones, tablets and desktop. English, Georgian and French.
+- Works on phones, tablets and desktop. French (the default), English and Georgian.
 
 ## One-time Firebase setup
 
