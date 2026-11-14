@@ -75,7 +75,6 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 .input{width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(226,188,106,.3);background:rgba(0,0,0,.25);color:var(--cream);font-size:16px;outline:none}
 .input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(226,188,106,.18)}
 .stack{display:flex;flex-direction:column;gap:12px;width:100%}
-.home-foot{margin-top:18px;display:flex;gap:18px;justify-content:center}
 
 /* ---------- lobby ---------- */
 #lobby{display:flex;align-items:center;justify-content:center;overflow:auto}
@@ -218,11 +217,6 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
   background:linear-gradient(180deg,#42111e,#2a0b13);border:1px solid rgba(226,188,106,.3);box-shadow:0 30px 80px rgba(0,0,0,.6);animation:rise .28s cubic-bezier(.2,.8,.2,1)}
 @keyframes rise{from{transform:translateY(24px);opacity:0}}
 .sheet h3{font-family:var(--serif);color:var(--gold);font-size:26px;margin:0 0 14px;text-align:center}
-.rules{margin:0;padding:0;list-style:none;counter-reset:r}
-.rules li{counter-increment:r;position:relative;padding:0 0 12px 38px;line-height:1.5;font-size:15px}
-.rules li:before{content:counter(r);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
-  font-weight:700;font-size:13px;background:rgba(226,188,106,.15);color:var(--gold);border:1px solid rgba(226,188,106,.35)}
-.rules b{color:var(--gold)}
 .sheet .btn{margin-top:10px}
 .result-title{font-family:var(--serif);font-size:clamp(34px,10vw,46px);font-weight:800;text-align:center;margin:4px 0 6px;color:var(--gold)}
 .result-sub{text-align:center;color:var(--muted);margin-bottom:18px}
@@ -279,7 +273,6 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
         <button class="btn ghost forget" id="forgetBtn" data-act="forget">×</button>
       </div>
     </div>
-    <div class="home-foot"><button class="link" data-act="rules" data-i="howTo"></button></div>
   </div>
 </section>
 
@@ -315,7 +308,6 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
   <div class="topbar">
     <button class="icon-btn" data-act="leave" aria-label="Menu">←</button>
     <div class="mid"><div class="t">ფურთი</div><div class="sub" id="subline"></div></div>
-    <button class="icon-btn" data-act="rules" aria-label="Rules">?</button>
     <div class="lang-switch" role="group" aria-label="Language"></div>
   </div>
   <div class="opps" id="opps"></div>
@@ -357,7 +349,7 @@ const T = {
   en:{
     tagline:"The Georgian card game of elevens",
     yourName:"Your name", defName:"Player",
-    playFriend:"Play with a friend", playAI:"Practice vs computer", howTo:"How to play",
+    playFriend:"Play with a friend", playAI:"Practice vs computer",
     create:"Create a game", orJoin:"or join with a code", join:"Join",
     shareCode:"Send this code to your friend. They open this page, tap “Play with a friend” and enter it.",
     copy:"Copy code", copied:"Copied!",
@@ -392,21 +384,11 @@ const T = {
     clubTie:"Most clubs was a tie, so nobody got that point.",
     menu:"Menu", close:"Got it", offline:"offline",
     waitingRematch:"Waiting for a new round…",
-    rulesTitle:"How to play",
-    rules:[
-      "Two players, a normal 52-card deck. Each player gets <b>4 cards</b> and <b>4 go face-up</b> on the table. When both hands are empty, everyone gets 4 more until the deck runs out.",
-      "Play one card per turn. A number card (<b>Ace = 1</b>) can take table cards that add up to <b>11</b> together with it: A+10, 5+6, 2+2+7… <b>You choose what to take</b>: tap the table cards, then tap your card again. One group per turn. Pick nothing and your card just goes on the table.",
-      "<b>King takes a King</b>, <b>Queen takes a Queen</b> (you pick which one).",
-      "The <b>Jack is the ფურთი</b>: it takes every card on the table except Queens and Kings.",
-      "If your card takes nothing, it stays on the table.",
-      "At the end, cards left on the table go to whoever took last. Then count <b>points</b> (5 in all): <b>most cards 2</b> (nobody if it’s 26–26), <b>2♣ 1</b>, <b>10♦ 1</b>, <b>most clubs 1</b>. <b>Most points wins.</b>",
-      "Points add up from round to round. The first to reach <b>11</b> (or <b>21</b>) wins the match. If more than one gets there in the same round, the highest total wins; a tie at the top plays one more round."
-    ]
   },
   ka:{
     tagline:"ქართული ბანქო — აკრიფე 11",
     yourName:"შენი სახელი", defName:"მოთამაშე",
-    playFriend:"ითამაშე მეგობართან", playAI:"ივარჯიშე კომპიუტერთან", howTo:"როგორ ვითამაშოთ",
+    playFriend:"ითამაშე მეგობართან", playAI:"ივარჯიშე კომპიუტერთან",
     create:"თამაშის შექმნა", orJoin:"ან შედი კოდით", join:"შესვლა",
     shareCode:"გაუგზავნე ეს კოდი მეგობარს. ის ხსნის ამ გვერდს, აჭერს „ითამაშე მეგობართან“ და წერს კოდს.",
     copy:"კოდის კოპირება", copied:"დაკოპირდა!",
@@ -441,21 +423,11 @@ const T = {
     clubTie:"მეტი ჯვარი რამდენიმე მოთამაშეს თანაბრად ჰქონდა, ამიტომ ეს ქულა არავის ერგო.",
     menu:"მენიუ", close:"გასაგებია", offline:"გავიდა",
     waitingRematch:"ველოდებით ახალ რაუნდს…",
-    rulesTitle:"როგორ ვითამაშოთ",
-    rules:[
-      "ორი მოთამაშე, ჩვეულებრივი 52-კარტიანი დასტა. თითოეულს ურიგდება <b>4 კარტი</b> და <b>4 იშლება</b> მაგიდაზე. როცა ორივეს ხელი დაუცარიელდება, ისევ 4-4 რიგდება, სანამ დასტა არ გათავდება.",
-      "ყოველ სვლაზე ჩამოდიხარ ერთ კარტს. რიცხვიან კარტს (<b>ტუზი = 1</b>) შეუძლია აიღოს მაგიდის კარტები, რომლებიც მასთან ერთად <b>11</b>-ს შეადგენს: ტუზი+10, 5+6, 2+2+7… <b>რას აიღებ, შენ ირჩევ</b>: შეეხე მაგიდის კარტებს, მერე ისევ შენს კარტს. ერთ სვლაზე ერთი ჯგუფი. თუ არაფერს აირჩევ, კარტი უბრალოდ მაგიდაზე დაიდება.",
-      "<b>კაროლს მიჰყავს კაროლი</b>, <b>დამას — დამა</b> (რომელს, შენ ირჩევ).",
-      "<b>ვალეტი არის ფურთი</b>: მიჰყავს მაგიდაზე ყველაფერი, დამისა და კაროლის გარდა.",
-      "თუ კარტმა ვერაფერი აიღო, მაგიდაზე რჩება.",
-      "ბოლოს მაგიდაზე დარჩენილი კარტები მიაქვს მას, ვინც ბოლოს აიღო. შემდეგ ითვლება <b>ქულები</b> (სულ 5): <b>მეტი კარტი — 2</b> (26–26-ზე არავის), <b>ჯვრის ორიანი (2♣) — 1</b>, <b>აგურის ათიანი (10♦) — 1</b>, <b>მეტი ჯვარი — 1</b>. <b>იგებს ვისაც მეტი ქულა აქვს.</b>",
-      "ქულები რაუნდიდან რაუნდამდე გროვდება. ვინც პირველი მიაღწევს <b>11</b>-ს (ან <b>21</b>-ს), ის იგებს თამაშს. თუ ერთსა და იმავე რაუნდში რამდენიმემ მიაღწია, იგებს ვისაც მეტი აქვს; თანაბრობისას კიდევ ერთი რაუნდი თამაშდება."
-    ]
   },
   fr:{
     tagline:"Le jeu de cartes géorgien des onze",
     yourName:"Ton nom", defName:"Joueur",
-    playFriend:"Jouer avec un ami", playAI:"S’entraîner contre l’ordinateur", howTo:"Comment jouer",
+    playFriend:"Jouer avec un ami", playAI:"S’entraîner contre l’ordinateur",
     create:"Créer une partie", orJoin:"ou rejoindre avec un code", join:"Rejoindre",
     shareCode:"Envoie ce code à ton ami. Il ouvre cette page, appuie sur « Jouer avec un ami » et le saisit.",
     copy:"Copier le code", copied:"Copié !",
@@ -490,16 +462,6 @@ const T = {
     clubTie:"Égalité pour le plus de trèfles : personne ne marque ce point.",
     menu:"Menu", close:"Compris", offline:"hors ligne",
     waitingRematch:"En attente d’une nouvelle manche…",
-    rulesTitle:"Comment jouer",
-    rules:[
-      "Deux joueurs, un jeu normal de 52 cartes. Chaque joueur reçoit <b>4 cartes</b> et <b>4 cartes sont posées face visible</b> sur la table. Quand les deux mains sont vides, chacun en reçoit 4 de plus, jusqu’à la fin du paquet.",
-      "Joue une carte par tour. Une carte numérotée (<b>As = 1</b>) peut prendre les cartes de la table qui font <b>11</b> avec elle\u00a0: A+10, 5+6, 2+2+7… <b>C’est toi qui choisis</b>\u00a0: appuie sur les cartes de la table, puis encore sur ta carte. Un seul groupe par tour. Si tu ne choisis rien, ta carte est simplement posée.",
-      "<b>Le Roi (K) prend un Roi</b>, <b>la Dame (Q) prend une Dame</b> (tu choisis laquelle).",
-      "<b>Le Valet (J) est le ფურთი</b> : il ramasse toutes les cartes de la table sauf les Dames et les Rois.",
-      "Si ta carte ne prend rien, elle reste sur la table.",
-      "À la fin, les cartes restantes sur la table vont à celui qui a pris en dernier. On compte alors les <b>points</b> (5 en tout) : <b>le plus de cartes 2</b> (personne en cas de 26–26), <b>le 2♣ 1</b>, <b>le 10♦ 1</b>, <b>le plus de trèfles 1</b>. <b>Le plus de points gagne.</b>",
-      "Les points s’additionnent de manche en manche. Le premier à atteindre <b>11</b> (ou <b>21</b>) gagne la partie. Si plusieurs y arrivent dans la même manche, le plus haut total gagne\u00a0; en cas d’égalité en tête, on joue une manche de plus."
-    ]
   }
 };
 const LANGS = [["en","EN"], ["ka","ქარ"], ["fr","FR"]];
@@ -909,15 +871,6 @@ $("game").addEventListener("click", e => {
 /* ================= modals ================= */
 function closeModal(){ $("modalRoot").innerHTML = ""; openModal = null; }
 function modal(html, wire){ $("modalRoot").innerHTML = `<div class="overlay"><div class="sheet">${html}</div></div>`; wire && wire($("modalRoot")); }
-
-function showRules(){
-  openModal = showRules;
-  modal(`<h3>${esc(t("rulesTitle"))}</h3><ul class="rules">${t("rules").map(r => `<li>${r}</li>`).join("")}</ul>
-    <button class="btn primary" data-x="close">${esc(t("close"))}</button>`, root => {
-      root.querySelector("[data-x=close]").onclick = closeModal;
-      root.querySelector(".overlay").onclick = e => { if (e.target.classList.contains("overlay")) closeModal(); };
-    });
-}
 
 function showResult(){
   const s = state; if (!s || !s.over) return;
@@ -1340,7 +1293,6 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const a = b.dataset.act;
   if (a === "lang"){ const l = b.dataset.lang; if (T[l] && l !== lang){ lang = l; store.set("lang", lang); applyLang(); } }
-  else if (a === "rules") showRules();
   else if (a === "ai") startAI();
   else if (a === "friend") openLobby();
   else if (a === "home"){ leaveOnline(true); show("home"); updateRejoin(); }
