@@ -103,11 +103,26 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
 @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
 
 /* ---------- game ---------- */
-#game{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto auto;max-width:1000px;margin:0 auto}
+#game{display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto auto;grid-template-columns:minmax(0,1fr);max-width:1000px;margin:0 auto}
 .topbar{display:flex;align-items:center;gap:10px;padding:10px 12px 4px}
 .topbar .mid{flex:1;text-align:center;line-height:1.1}
 .topbar .t{font-family:var(--serif);font-weight:800;font-size:22px;color:var(--gold)}
 .topbar .sub{font-size:12px;color:var(--muted);margin-top:2px}
+/* scoreboard: every player's match points next to their name; the leader in gold */
+.scoreboard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:2px 12px 6px}
+.sb-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;max-width:100%}
+.sb-p{display:flex;align-items:center;gap:8px;min-width:0;max-width:46vw;padding:3px 3px 3px 12px;border-radius:20px;
+  background:rgba(0,0,0,.28);border:1px solid rgba(226,188,106,.25);font-size:14px}
+.sb-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.sb-p b{flex:none;min-width:28px;height:28px;padding:0 7px;border-radius:14px;display:grid;place-items:center;
+  background:rgba(226,188,106,.14);color:var(--gold);font-size:16px;font-weight:800}
+.sb-p.lead{border-color:var(--gold);box-shadow:0 0 12px rgba(226,188,106,.25)}
+.sb-p.lead b{background:linear-gradient(180deg,#f2d58f,var(--gold) 45%,var(--gold2));color:#2a1406}
+.sb-cap{font-size:12px;color:var(--muted);text-align:center;line-height:1.35}
+.sb-cap b{color:var(--cream);font-weight:600}
+.scoreboard.four .sb-row{gap:5px;flex-wrap:nowrap;width:100%}
+.scoreboard.four .sb-p{flex:1 1 0;max-width:max-content;gap:5px;padding-left:8px;font-size:12px}
+.scoreboard.four .sb-p b{min-width:24px;height:24px;font-size:14px;padding:0 5px}
 .zone{display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 10px}
 .tag{display:flex;align-items:center;gap:10px;font-size:14px;min-height:34px}
 .avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;
@@ -310,12 +325,13 @@ h1.logo{font-family:var(--serif);font-weight:800;font-size:clamp(56px,17vw,92px)
     <div class="mid"><div class="t">ფურთი</div><div class="sub" id="subline"></div></div>
     <div class="lang-switch" role="group" aria-label="Language"></div>
   </div>
+  <div class="scoreboard" id="scoreboard"></div>
   <div class="opps" id="opps"></div>
   <div class="felt"><div class="felt-mark">11</div><div class="table-cards" id="table"></div></div>
   <div class="statusbar">
     <div class="deckmini"><div class="card back"></div><span id="deckCount">0</span></div>
     <div class="status" id="status"></div>
-    <div class="spacer" id="matchScore"></div>
+    <div class="spacer"></div>
   </div>
   <div class="zone" id="myZone">
     <div class="hand" id="myHand"></div>
@@ -362,7 +378,7 @@ const T = {
     noRoom:"Online play couldn’t load. Check your internet connection and reload the page.",
     notSetup:"Online play isn’t set up yet: the Firebase settings are missing.",
     needName:"Type your name first. Your friend sees it, and your all-time score is kept under it.",
-    reconnecting:"reconnecting…", allTime:"All-time", drawW:"draw", drawsW:"draws",
+    reconnecting:"reconnecting…", allTime:"Matches won", drawW:"draw", drawsW:"draws",
     connErr:"Couldn’t connect. Try again in a moment.",
     rejoin:"↩ Rejoin game {c} · {s}", forget:"Forget this game",
     ended:"This game has ended: a player was away for more than 2 minutes.",
@@ -374,10 +390,10 @@ const T = {
     pickOrPlace:"Tap table cards to take them, or tap your card again to put it down",
     tapAgainTake:"Tap your card again to take them", pickHand:"Now tap the card you want to play",
     badTake:"Those can’t be taken with this card. Pick again, or pick nothing to put it down.",
-    playTo:"Play to", toTarget:"to {g}", matchLine:"Match to {g}: {m}", ptMatch:"Match total",
+    playTo:"Play to", matchTo:"Match to {g}", ptMatch:"Match total",
     winMatch:"You win the match!", loseMatch:"{n} wins the match", nextRound:"Next round", newMatch:"New match",
     cards:"<b>{n}</b> cards",
-    round:"Round {n}", vs:"vs {n}",
+    round:"Round {n}",
     win:"You win the round!", lose:"{n} wins the round", draw:"The round is a draw",
     ptMost:"Most cards", ptClubs:"Most clubs", ptTotal:"Points",
     cardTie:"Most cards was a tie, so nobody got those 2 points.",
@@ -401,7 +417,7 @@ const T = {
     noRoom:"ონლაინ თამაში ვერ ჩაიტვირთა. შეამოწმე ინტერნეტი და განაახლე გვერდი.",
     notSetup:"ონლაინ თამაში ჯერ არ არის მომართული: Firebase-ის პარამეტრები აკლია.",
     needName:"ჯერ სახელი ჩაწერე. მეგობარი მას დაინახავს და საერთო ანგარიშიც ამ სახელით ინახება.",
-    reconnecting:"კავშირი აღდგება…", allTime:"სულ", drawW:"ფრე", drawsW:"ფრე",
+    reconnecting:"კავშირი აღდგება…", allTime:"მოგებული თამაშები", drawW:"ფრე", drawsW:"ფრე",
     connErr:"დაკავშირება ვერ მოხერხდა. ცოტა ხანში სცადე.",
     rejoin:"↩ დაბრუნდი თამაშში {c} · {s}", forget:"ამ თამაშის დავიწყება",
     ended:"ეს თამაში დასრულდა: ერთ-ერთი მოთამაშე 2 წუთზე მეტხანს არ იყო.",
@@ -413,10 +429,10 @@ const T = {
     pickOrPlace:"შეეხე მაგიდის კარტებს, რომ აიღო, ან ისევ შეეხე შენს კარტს, რომ უბრალოდ დადო",
     tapAgainTake:"ისევ შეეხე შენს კარტს, რომ აიღო", pickHand:"ახლა შეეხე კარტს, რომლითაც ჩამოხვალ",
     badTake:"ამ კარტით ამათ ვერ აიღებ. აირჩიე თავიდან, ან არაფერი, რომ უბრალოდ დადო.",
-    playTo:"რამდენ ქულამდე?", toTarget:"{g} ქულამდე", matchLine:"თამაში {g} ქულამდე: {m}", ptMatch:"ჯამი",
+    playTo:"რამდენ ქულამდე?", matchTo:"თამაში {g} ქულამდე", ptMatch:"ჯამი",
     winMatch:"შენ მოიგე თამაში!", loseMatch:"თამაში მოიგო: {n}", nextRound:"შემდეგი რაუნდი", newMatch:"ახალი თამაში",
     cards:"<b>{n}</b> კარტი",
-    round:"რაუნდი {n}", vs:"vs {n}",
+    round:"რაუნდი {n}",
     win:"რაუნდი მოიგე!", lose:"რაუნდი მოიგო: {n}", draw:"რაუნდი ფრედ დასრულდა",
     ptMost:"მეტი კარტი", ptClubs:"მეტი ჯვარი", ptTotal:"ქულები",
     cardTie:"მეტი კარტი რამდენიმე მოთამაშეს თანაბრად ჰქონდა, ამიტომ 2 ქულა არავის ერგო.",
@@ -440,7 +456,7 @@ const T = {
     noRoom:"Le jeu en ligne n’a pas pu se charger. Vérifie ta connexion internet et recharge la page.",
     notSetup:"Le jeu en ligne n’est pas encore configuré : les paramètres Firebase manquent.",
     needName:"Saisis d’abord ton nom. Ton ami le voit, et ton score total est enregistré sous ce nom.",
-    reconnecting:"reconnexion…", allTime:"Au total", drawW:"nul", drawsW:"nuls",
+    reconnecting:"reconnexion…", allTime:"Parties gagnées", drawW:"nul", drawsW:"nuls",
     connErr:"Connexion impossible. Réessaie dans un instant.",
     rejoin:"↩ Revenir à la partie {c} · {s}", forget:"Oublier cette partie",
     ended:"Cette partie est terminée : un joueur est parti depuis plus de 2 minutes.",
@@ -452,10 +468,10 @@ const T = {
     pickOrPlace:"Appuie sur les cartes de la table à prendre, ou encore sur ta carte pour la poser",
     tapAgainTake:"Appuie encore sur ta carte pour les prendre", pickHand:"Appuie maintenant sur la carte à jouer",
     badTake:"Ces cartes ne se prennent pas avec celle-ci. Choisis à nouveau, ou rien pour la poser.",
-    playTo:"Partie en", toTarget:"en {g}", matchLine:"Partie en {g}\u00a0: {m}", ptMatch:"Total",
+    playTo:"Partie en", matchTo:"Partie en {g}", ptMatch:"Total",
     winMatch:"Tu gagnes la partie\u00a0!", loseMatch:"{n} gagne la partie", nextRound:"Manche suivante", newMatch:"Nouvelle partie",
     cards:"<b>{n}</b> cartes",
-    round:"Manche {n}", vs:"contre {n}",
+    round:"Manche {n}",
     win:"Tu gagnes la manche\u00a0!", lose:"{n} gagne la manche", draw:"Manche nulle",
     ptMost:"Plus de cartes", ptClubs:"Plus de trèfles", ptTotal:"Points",
     cardTie:"Égalité pour le plus de cartes : personne ne marque ces 2 points.",
@@ -743,11 +759,8 @@ function renderState(s, anim){
   }).join("");
 
   const tt = totalsFor(s);
-  $("subline").textContent = t("round", {n:s.round}) + " · " + t("toTarget", {g:s.target})
-    + (others.length === 1 ? " · " + t("vs", {n:playerName(s, others[0])}) : "")
-    + (tt ? ` · ${t("allTime")} ${tt.list.map(x => x.wins).join("–")}` : "");
-  // match points so far, mine first
-  $("matchScore").textContent = seatOrder(s).map(i => s.tot[i]).join("–");
+  $("subline").textContent = t("round", {n:s.round});
+  renderScoreboard(s, tt);
 
   // table
   const tbl = $("table");
@@ -786,6 +799,18 @@ function renderState(s, anim){
       : sel ? (picks.size ? t("tapAgainTake") : t("pickOrPlace"))
       : picks.size ? t("pickHand") : t("yourTurn");
   } else st.textContent = s.mode === "ai" ? t("aiThinking") : t("theirTurn", {n:playerName(s, s.turn)});
+}
+
+// match points by name (me first), the leader in gold; under it the target and all-time match wins by name
+function renderScoreboard(s, tt){
+  const order = seatOrder(s), top = Math.max(...s.tot);
+  const alone = s.tot.filter(x => x === top).length === 1;
+  const sb = $("scoreboard");
+  sb.classList.toggle("four", order.length > 2);
+  const pills = order.map(i => `<div class="sb-p${top > 0 && alone && s.tot[i] === top ? " lead" : ""}"><span class="sb-n">${esc(playerName(s, i))}</span><b>${s.tot[i]}</b></div>`).join("");
+  const wins = tt ? " · " + esc(t("allTime")) + (lang === "fr" ? "\u00a0: " : ": ") + tt.list.map(x => `${esc(x.name)} <b>${x.wins}</b>`).join(", ")
+    + (tt.draws ? `, ${tt.draws} ${esc(t(tt.draws === 1 ? "drawW" : "drawsW"))}` : "") : "";
+  sb.innerHTML = `<div class="sb-row">${pills}</div><div class="sb-cap">${esc(t("matchTo", {g:s.target}))}${wins}</div>`;
 }
 
 // seats starting with mine, then in playing order
@@ -898,7 +923,7 @@ function showResult(){
   const ties = (r.most < 0 ? [t("cardTie")] : []).concat(r.clubs < 0 ? [t("clubTie")] : []);
   modal(`<div style="text-align:center;font-size:40px">${icon}</div>
     <div class="result-title">${title}</div>
-    <div class="result-sub">${esc(t("round", {n:s.round}))} · ${esc(t("matchLine", {g:s.target, m:cols.map(i => s.tot[i]).join("–")}))}</div>
+    <div class="result-sub">${esc(t("round", {n:s.round}))} · ${esc(t("matchTo", {g:s.target}))}</div>
     ${totalsLine(s)}
     <table class="rtable ${cols.length > 2 ? "four" : ""}"><tr><th></th>${cols.map(i => `<th><span class="nm">${esc(playerName(s, i))}</span></th>`).join("")}</tr>${rows}</table>
     ${ties.map(x => `<p class="note" style="margin:0 0 6px">${esc(x)}</p>`).join("")}
